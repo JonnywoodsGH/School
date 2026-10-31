@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fractions · Dividing fractions and making calculations easier</title>
+
+<style>
+/* Layout: fixed 1920×1080 stage scaled to the window; each click of a clicker reveals the next build, then moves on. Single committed light look to match the printed 9618 deck. */
+:root{
+  --paper:#FAF6EE; --card:#FFFFFF; --ink:#1F2A37; --body:#3C4754; --muted:#5F6B7A; --sand:#9A9179;
+  --navy:#16324F; --navy2:#1D3E60; --orange:#D96A20; --orange-l:#F0A25A; --warm:#FFF6E8;
+  --green:#1C7A55; --green-l:#E7F3EC; --purple:#6B4FA0; --purple-l:#EFEAF8; --red:#B4372B; --red-l:#FBEAE7;
+  --line:#E0D6C2; --blue-l:#F3F6FA; --frame:#0E1B2A; --white:#FFFFFF;
+  --serif:Georgia,"Times New Roman",serif; --sans:"Trebuchet MS","Segoe UI",Arial,sans-serif; --mono:Consolas,Menlo,"SF Mono",monospace;
+}
+html,body{height:100%;margin:0;background:var(--frame);color:var(--ink);overflow:hidden}
+#viewport{position:fixed;inset:0;background:var(--frame);overflow:hidden;user-select:none;-webkit-user-select:none}
+#viewport.idle{cursor:none}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;background:var(--paper);overflow:hidden;font-family:var(--sans);color:var(--ink);box-shadow:0 10px 60px rgba(0,0,0,.4)}
+
+/* ---------- slides ---------- */
+.slide{position:absolute;inset:0;display:none;flex-direction:column;gap:34px;padding:84px 120px 120px;background:var(--paper)}
+.slide.active{display:flex;animation:slideIn .35s ease}
+@keyframes slideIn{from{opacity:0}to{opacity:1}}
+.slide.dark{background:var(--navy);color:var(--white)}
+.foot{position:absolute;left:120px;bottom:48px;font-size:18px;color:var(--sand);letter-spacing:.02em}
+.dark .foot{color:#8FA3B8}
+
+/* builds */
+[data-step]{opacity:0;transform:translateY(18px);transition:opacity .45s ease,transform .45s ease}
+[data-step][data-fx="fade"]{transform:none}
+[data-step][data-fx="pop"]{transform:scale(.92)}
+[data-step][data-fx="left"]{transform:translateX(-36px)}
+[data-step].shown{opacity:1;transform:none}
+.instant [data-step]{transition:none!important}
+.instant .play,.instant .play *{animation-duration:1ms!important;animation-delay:0s!important}
+
+/* header */
+.hd{display:flex;flex-direction:column;gap:12px}
+.tags{display:flex;gap:14px;align-items:center;margin-bottom:6px}
+.tag{font:700 18px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;padding:9px 16px;border-radius:4px;background:var(--purple-l);color:var(--purple)}
+.tag.navy{background:var(--navy);color:var(--white)}
+.tag.orange{background:var(--orange);color:var(--white)}
+.tag.green{background:var(--green-l);color:var(--green)}
+.eyebrow{font:700 20px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin:0}
+h2{font:400 64px/1.1 var(--serif);color:var(--ink);margin:0;text-wrap:balance}
+.lede{font-size:26px;color:var(--muted);margin:0}
+.body{flex:1;display:flex;flex-direction:column;gap:22px;min-height:0}
+
+/* question cards */
+.q{display:grid;grid-template-columns:60px 1fr;gap:24px;align-items:start;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--navy);border-radius:6px;padding:28px 36px;box-shadow:0 2px 6px rgba(31,42,55,.06)}
+.q p{margin:0;font-size:32px;line-height:1.35;font-weight:700;color:var(--ink)}
+.q.plain{border-left-width:1px}
+.q.lg{padding:40px 44px}.q.lg p{font-size:42px}.q.lg .numtxt{font-size:44px}
+.q.purple{border-left-color:var(--purple)}
+.badge{width:52px;height:52px;border-radius:50%;background:var(--navy);color:var(--white);display:grid;place-items:center;font:700 26px/1 var(--sans)}
+.badge.o{background:var(--orange)}.badge.p{background:var(--purple)}.badge.g{background:var(--green)}
+.numtxt{font:700 34px/1.3 var(--sans);color:var(--orange)}
+
+/* callouts */
+.call{display:grid;grid-template-columns:40px 1fr;gap:16px;background:var(--warm);border:1px solid #F1D9B8;border-radius:6px;padding:24px 32px;align-items:start}
+.call .ico{color:var(--orange);font-size:28px;line-height:1.2}
+.call b{display:block;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin-bottom:6px}
+.call p{margin:0;font-size:27px;line-height:1.4;color:var(--body)}
+.call.ok{background:var(--green-l);border-color:#BFDCCB}
+.call.ok .ico,.call.ok b{color:var(--green)}
+.call.ok p{color:var(--green);font-weight:700}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:27px;background:var(--card);border:1px solid var(--line)}
+.tbl th{background:var(--navy);color:var(--white);text-align:left;padding:18px 24px;font-weight:700}
+.tbl td{padding:17px 24px;border-top:1px solid var(--line);vertical-align:top;line-height:1.3;color:var(--body)}
+.tbl td.k{font-weight:700;color:var(--ink)}
+.tbl td.slot{position:relative}
+.tbl td.slot::before{content:"?";position:absolute;left:24px;top:14px;font:700 28px var(--sans);color:#D9CFBC;transition:opacity .3s}
+.tbl td.slot.on::before{opacity:0}
+.vi{color:var(--purple)}
+body.no-vi .vi{display:none!important}
+
+/* two-col row lists */
+.rows{display:flex;flex-direction:column;gap:20px}
+.row2{display:grid;grid-template-columns:60px 1fr 1fr;gap:26px;align-items:center}
+.row2 .st{font-size:35px;font-weight:700;color:var(--ink)}
+.row2 .ex{font-size:30px;color:var(--body);border-left:2px solid var(--line);padding-left:26px;line-height:1.35}
+
+/* labelled statements */
+.lab{display:grid;grid-template-columns:300px 1fr;gap:30px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:26px 34px}
+.lab .pill{justify-self:start;font:700 22px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;padding:12px 18px;border-radius:4px;color:var(--white);background:var(--navy)}
+.pill.o{background:var(--orange)}.pill.p{background:var(--purple)}.pill.g{background:var(--green)}
+.lab p{margin:0;font-size:30px;line-height:1.4;color:var(--body)}
+
+/* timer pill */
+.timer{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:12px;font:700 22px/1 var(--sans);letter-spacing:.06em;padding:10px 18px 10px 14px;border-radius:999px;background:var(--orange);color:var(--white);box-shadow:0 0 0 0 rgba(217,106,32,.5)}
+.timer .t-ico{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.25);display:grid;place-items:center;font-size:12px}
+.timer .t-time{font-variant-numeric:tabular-nums;min-width:66px}
+.timer.running{background:var(--navy)}
+.timer.warn{background:var(--orange)}
+.timer.done{background:var(--red);animation:pulse 1s ease-in-out 4}
+.timer:focus-visible{outline:3px solid var(--orange-l);outline-offset:3px}
+@keyframes pulse{50%{box-shadow:0 0 0 14px rgba(180,55,43,0)}0%{box-shadow:0 0 0 0 rgba(180,55,43,.6)}}
+.timer.big{font-size:34px;padding:16px 28px 16px 18px}
+.timer.big .t-ico{width:34px;height:34px;font-size:15px}
+.timer.big .t-time{min-width:100px}
+
+/* cover */
+.cover{flex-direction:row;align-items:center;gap:90px;padding:0 120px}
+.cover .left{flex:1;display:flex;flex-direction:column;gap:22px}
+.cover .eyebrow{color:var(--orange-l)}
+.cover h1{font:400 96px/1.08 var(--serif);margin:0;color:var(--white)}
+.cover .sub{font-size:30px;color:#C9D4E0;margin:0}
+.cover .meta{margin-top:80px;font-size:20px;letter-spacing:.16em;color:#8FA3B8}
+.cover .panel{width:640px;height:720px;background:var(--navy2);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;font:700 44px/1 var(--mono);color:var(--orange-l);position:relative}
+.cover .panel .w{animation:rise .7s ease backwards;animation-delay:var(--d)}
+.cover .panel .proc{color:var(--white)}
+.cover .panel small{position:absolute;bottom:44px;font:700 18px var(--sans);letter-spacing:.2em;color:#C9D4E0}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}}
+
+/* section divider */
+.divider{flex-direction:row;align-items:center;gap:100px}
+.divider .left{flex:1;display:flex;flex-direction:column;gap:24px}
+.divider .big{font:400 150px/1 var(--serif);color:var(--orange-l)}
+.divider h2{color:var(--white);font-size:80px}
+.divider .lede{color:#C9D4E0;font-size:32px;max-width:900px}
+.divider .reveal{width:560px;display:flex;flex-direction:column;align-items:center;gap:22px;background:var(--navy2);border-radius:16px;padding:60px 40px;text-align:center}
+.divider .reveal .lbl{font:700 20px var(--sans);letter-spacing:.18em;color:#8FA3B8}
+.divider .reveal .v{font:400 52px/1.2 var(--serif);color:var(--white)}
+.divider .reveal .v.o{color:var(--orange-l);font-family:var(--mono);font-weight:700;font-size:44px}
+.divider .reveal .arr{font-size:40px;color:var(--orange-l)}
+
+/* vocab cards */
+.vocab{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;flex:1}
+.vcard{background:var(--card);border:1px solid var(--line);border-top:8px solid var(--navy);border-radius:6px;padding:30px 28px;display:flex;flex-direction:column;gap:14px}
+.vcard.o{border-top-color:var(--orange)}.vcard.p{border-top-color:var(--purple)}.vcard.g{border-top-color:var(--green)}
+.vcard h3{font:700 38px/1.1 var(--serif);margin:0;color:var(--ink)}
+.vcard .vi{font-size:24px;margin-top:-4px}
+.vcard p{margin:10px 0 0;font-size:27px;line-height:1.4;color:var(--body);flex:1}
+.chip{font:400 24px var(--mono);background:var(--blue-l);border:1px solid var(--line);padding:12px 16px;border-radius:4px;color:var(--ink)}
+
+/* flow diagram */
+.flowbox{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:26px 34px 34px;display:flex;flex-direction:column;gap:22px}
+.flowbox.alt{background:var(--warm);border-color:#F1D9B8}
+.flowbox .lbl{font:700 18px var(--sans);letter-spacing:.16em;color:var(--sand)}
+.flowbox.alt .lbl{color:var(--orange)}
+.flow{position:relative;display:flex;align-items:center}
+.fbox{flex:1;text-align:center;padding:40px 12px;border:2px solid var(--navy);border-radius:8px;font:700 34px/1.2 var(--sans);color:var(--navy);background:var(--card)}
+.alt .fbox{border-color:var(--orange);color:var(--orange)}
+.farr{width:70px;text-align:center;font-size:34px;color:#C9BFA9}
+.packet{position:absolute;top:-34px;left:10%;width:26px;height:26px;border-radius:50%;background:var(--orange);opacity:0;box-shadow:0 0 0 6px rgba(217,106,32,.2)}
+.alt .packet{background:var(--navy);box-shadow:0 0 0 6px rgba(22,50,79,.2)}
+.flow.play .fbox{animation:lit .45s ease forwards;animation-delay:calc(var(--i) * .7s)}
+.alt .flow.play .fbox{animation-name:litO}
+.flow.play .farr{animation:arr .3s ease forwards;animation-delay:calc(var(--i) * .7s + .35s)}
+.flow.play .packet{animation:travel var(--dur) linear forwards}
+@keyframes lit{to{background:var(--navy);color:var(--white)}}
+@keyframes litO{to{background:var(--orange);color:var(--white)}}
+@keyframes arr{to{color:var(--orange);transform:scale(1.25)}}
+@keyframes travel{0%{left:var(--from);opacity:1}92%{opacity:1}100%{left:var(--to);opacity:0}}
+
+/* quick check */
+.sort{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;flex:1}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:26px 24px;display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-height:220px}
+.scard .dev{font:400 40px/1.15 var(--serif);color:var(--ink)}
+.scard .n{font:700 20px var(--sans);color:var(--sand);letter-spacing:.1em}
+.ans{font:700 22px/1.25 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:12px 14px;border-radius:4px;color:var(--white);background:var(--navy)}
+.ans.o{background:var(--orange)}.ans.p{background:var(--purple)}.ans.g{background:var(--green)}
+.ans.mix{background:linear-gradient(90deg,var(--navy) 50%,var(--orange) 50%)}
+.ans small{display:block;font-size:19px;text-transform:none;letter-spacing:0;font-weight:400;margin-top:4px;opacity:.95}
+.key{display:flex;gap:16px;align-items:center;font-size:24px;color:var(--muted)}
+.key span{display:inline-flex;align-items:center;gap:10px}
+.key i{font-style:normal;width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;color:var(--white);font-weight:700;font-size:20px}
+
+/* wrong / right */
+.wr{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.wcard{border-radius:8px;padding:30px 36px;display:flex;flex-direction:column;gap:18px}
+.wcard.bad{background:var(--red-l);border:1px solid #EDC3BC}
+.wcard.good{background:var(--green-l);border:1px solid #BFDCCB}
+.wcard b{font:700 20px var(--sans);letter-spacing:.16em}
+.bad b{color:var(--red)}.good b{color:var(--green)}
+.wcard pre{margin:0;font:400 32px/1.45 var(--mono);color:var(--ink);white-space:pre-wrap;position:relative}
+.wcard p{margin:0;font-size:26px;line-height:1.4}
+.bad p{color:var(--red)}.good p{color:var(--green)}
+.strike{position:relative;display:inline-block}
+.strike::after{content:"";position:absolute;left:-6px;right:-6px;top:52%;height:5px;background:var(--red);transform:scaleX(0);transform-origin:left;border-radius:3px}
+.play .strike::after{animation:strk .5s ease forwards}
+.play .strike + .strike::after{animation-delay:.35s}
+@keyframes strk{to{transform:scaleX(1)}}
+.warnbadge{width:64px;height:64px;border-radius:50%;background:var(--red);color:var(--white);display:grid;place-items:center;font:700 36px var(--sans)}
+
+/* notes */
+.notes{display:grid;grid-template-columns:60px 380px 1fr;gap:16px 28px;align-items:baseline;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:30px 40px}
+.notes .n{font:700 28px var(--sans);color:var(--orange)}
+.notes .term{font:700 32px/1.2 var(--serif);color:var(--ink)}
+.notes .term .vi{display:block;font:400 22px var(--sans);margin-top:4px}
+.notes .def{font-size:27px;line-height:1.4;color:var(--body)}
+.notes .div{grid-column:1/-1;border-top:1px solid var(--line)}
+
+/* answers */
+.ansrow{display:grid;grid-template-columns:60px 1fr;gap:24px;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--green);border-radius:6px;padding:24px 34px;align-items:start}
+.ansrow .qq{margin:0 0 12px;font-size:23px;color:var(--muted);font-style:italic}
+.ansrow .aa{margin:0;font-size:28px;line-height:1.42;color:var(--ink)}
+.ansrow .mk{color:var(--green);font-weight:700}
+
+/* worked example */
+.prob{background:var(--navy);color:var(--white);border-radius:8px;padding:36px 44px;font:400 36px/1.4 var(--serif)}
+.prob .mk{font-family:var(--sans);font-weight:700;color:var(--orange-l)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.know{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px 34px;display:flex;flex-direction:column;gap:12px}
+.know b{font:700 20px var(--sans);letter-spacing:.14em;color:var(--orange)}
+.know p{margin:0;font-size:30px;line-height:1.4;color:var(--body)}
+.ben{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px 34px;display:flex;flex-direction:column;gap:16px}
+.ben .pt{display:flex;gap:18px;align-items:center;font:700 32px/1.25 var(--sans);color:var(--ink)}
+.ben .ap{font-size:28px;line-height:1.4;color:var(--body);padding-left:70px}
+.mtag{font:700 17px var(--sans);letter-spacing:.08em;padding:6px 10px;border-radius:4px;background:var(--green-l);color:var(--green);white-space:nowrap;margin-left:auto}
+.ap .mtag{margin:0 0 0 10px;vertical-align:middle}
+
+/* HUD inside stage */
+#progress{position:absolute;left:0;bottom:0;height:6px;background:var(--orange);transition:width .3s ease;z-index:20}
+#hud{position:absolute;right:120px;bottom:42px;display:flex;align-items:center;gap:18px;font:700 19px var(--sans);color:var(--sand);z-index:20;font-variant-numeric:tabular-nums}
+#dots{display:flex;gap:8px}
+#dots i{width:11px;height:11px;border-radius:50%;border:2px solid #C9BFA9;display:block}
+#dots i.f{background:var(--orange);border-color:var(--orange)}
+#stage.on-dark #hud{color:#8FA3B8}
+#chip{position:absolute;top:36px;right:44px;z-index:25;display:none;align-items:center;gap:8px}
+#chip.show{display:flex}
+#chip .x{all:unset;cursor:pointer;width:40px;height:40px;border-radius:50%;background:rgba(31,42,55,.12);display:grid;place-items:center;font:700 20px var(--sans);color:var(--ink)}
+
+/* overlays (outside stage, in window space) */
+#blank{position:absolute;inset:0;z-index:60;display:none}
+#blank.black{display:block;background:#000}
+#blank.white{display:block;background:#fff}
+#laser{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:rgba(230,40,30,.9);box-shadow:0 0 14px 6px rgba(230,40,30,.55);pointer-events:none;z-index:70;display:none}
+#laser.on{display:block}
+.ov{position:absolute;inset:0;z-index:80;background:rgba(14,27,42,.82);display:none;align-items:center;justify-content:center;padding:24px}
+.ov.show{display:flex}
+.sheet{background:var(--paper);color:var(--ink);border-radius:12px;max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:26px 28px;font:15px/1.5 var(--sans);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.sheet h3{font:400 26px var(--serif);margin:0 0 14px}
+.sheet ol{margin:0;padding:0;list-style:none;columns:2;column-gap:24px}
+.sheet li{break-inside:avoid}
+.sheet li button{all:unset;cursor:pointer;display:flex;gap:10px;width:100%;padding:7px 8px;border-radius:6px;box-sizing:border-box}
+.sheet li button:hover,.sheet li button:focus-visible{background:var(--warm)}
+.sheet li button.cur{background:var(--navy);color:var(--white)}
+.sheet li span{color:var(--sand);min-width:22px;font-variant-numeric:tabular-nums}
+.sheet table{border-collapse:collapse;width:100%}
+.sheet td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
+.sheet td:first-child{white-space:nowrap;font-weight:700;color:var(--navy);width:42%}
+.sheet kbd{font:12px var(--mono);background:var(--card);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px}
+.sheet .close{float:right;all:unset;cursor:pointer;float:right;font-weight:700;color:var(--muted);padding:4px 8px}
+@media (max-width:600px){.sheet ol{columns:1}}
+#ctrl{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));z-index:50;display:flex;gap:6px;opacity:0;transition:opacity .3s}
+#viewport:not(.idle) #ctrl{opacity:1}
+#ctrl button{all:unset;cursor:pointer;width:42px;height:42px;border-radius:8px;background:rgba(14,27,42,.75);color:#fff;display:grid;place-items:center;font:700 18px var(--sans)}
+#ctrl button:hover,#ctrl button:focus-visible{background:var(--orange)}
+#toast{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:55;background:rgba(14,27,42,.9);color:#fff;font:14px/1.4 var(--sans);padding:10px 16px;border-radius:8px;max-width:calc(100% - 32px);text-align:center;transition:opacity .6s;pointer-events:none}
+#toast.hide{opacity:0}
+#jump{position:absolute;left:50%;top:20px;transform:translateX(-50%);z-index:56;background:var(--orange);color:#fff;font:700 22px var(--sans);padding:8px 18px;border-radius:8px;display:none}
+@media (prefers-reduced-motion:reduce){*{animation-duration:1ms!important;animation-delay:0s!important;transition:none!important}}
+/* ---- Year 8 maths additions (build_html_as.py) ---- */
+.mx{display:inline-flex;align-items:center;vertical-align:middle;white-space:nowrap}
+.mw{margin-right:.06em}
+.fr{display:inline-flex;flex-direction:column;align-items:stretch;text-align:center;font-size:.8em;line-height:1.08;margin:0 .1em;vertical-align:middle}
+.nu{border-bottom:.075em solid currentColor;padding:0 .14em .02em}.de{padding:.04em .14em 0}
+.rd{position:relative;display:inline-block}
+.rd::after{content:"";position:absolute;left:50%;top:-.1em;width:.17em;height:.17em;margin-left:-.085em;border-radius:50%;background:currentColor}
+.c-o{color:var(--orange)}.c-g{color:var(--green)}.c-r{color:var(--red)}
+.mth{font-family:var(--sans)}
+.q p .mx,.lab p .mx{font-size:1.08em}
+/* cover / divider maths panels */
+.cover .panel.mpanel{font:700 64px/1.1 var(--sans);gap:40px}
+.cover .panel.mpanel small.top{position:absolute;top:44px;bottom:auto}
+.divider .reveal .v.mth{font:700 50px/1.2 var(--sans)}
+.divider .reveal .v.o.mth{color:var(--orange-l)}
+/* objectives */
+.call.objs{grid-template-columns:40px 1fr}.objc{display:grid;grid-template-columns:130px 1fr;gap:18px;align-items:start;margin-top:10px}
+.objc .tag{justify-self:start;font-size:18px}.objc p{font-size:24px!important}
+/* word bank example column */
+.tbl.wbk td{vertical-align:middle}.tbl.wbk td.ex{font-weight:700;color:var(--ink)}
+/* worked example */
+.prob.mth{font:700 44px/1.4 var(--sans)}
+.qblue{background:var(--blue-l);border:1px solid var(--line);border-radius:8px;padding:18px 34px;font:700 40px/1.3 var(--sans);color:var(--navy)}
+.srows{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:60px 1fr 70px 1fr 470px;align-items:center;gap:0 14px;font:700 46px/1.15 var(--sans);color:var(--ink);min-height:92px}
+.srow .lhs{text-align:right}.srow .sg{text-align:center;color:var(--navy)}
+.srow .rs{font:400 28px/1.3 var(--sans);color:var(--muted);border-left:6px solid var(--orange);padding-left:20px}
+.call.ok p.mth{font-size:36px}.anote{font:400 24px var(--sans);margin-left:28px;color:var(--green)}
+/* bus stop */
+.bs-row{display:grid;grid-template-columns:auto 1fr;gap:44px;align-items:center}
+.bs-card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:30px 64px;display:grid;place-items:center;min-width:620px}
+.bs{display:inline-flex;align-items:flex-end;font:700 46px/1.2 var(--sans)}.bs.big{font-size:76px}
+.bs-div{color:var(--navy);padding:0 .3em .05em 0}
+.bs-body{display:flex;border-left:.07em solid var(--navy);border-top:.07em solid var(--navy);padding:0 .1em 0 .12em;position:relative;margin-top:1.25em}
+.bs-cell{width:.78em;text-align:center;position:relative}.bs-cell.pt{width:.36em}
+.bs-q{position:absolute;left:0;right:0;top:-1.3em;color:var(--green)}
+.bs-d{color:var(--ink);position:relative}
+.bs-d sup{position:absolute;left:-.28em;top:.02em;font-size:.46em;color:var(--orange);line-height:1}
+.bsrows{display:flex;flex-direction:column;gap:12px}
+.bsr{display:flex;align-items:center;gap:20px;font-size:32px;color:var(--body)}
+.bsr.hot{color:var(--orange);font-weight:700}.bsr em{font-style:normal;font-weight:700}
+/* dots table */
+.tbl.dots td{vertical-align:middle;font-size:30px}.tbl.dots td.k{font-size:48px}.tbl.dots td.lt{font-size:38px}
+.tbl.dots .dotv{font-size:56px;font-weight:700;color:var(--orange)}
+.tbl.dots td.slot::before{top:30px}
+/* wrong / right with maths */
+.wcard .mlines{display:flex;flex-direction:column;gap:6px;font:700 42px/1.25 var(--sans);color:var(--ink)}
+.wcard .wl{min-height:70px;display:flex;align-items:center}
+/* notes with maths */
+.notes .def{display:flex;flex-direction:column;gap:6px}.notes .def .ml{font:700 38px/1.25 var(--sans);color:var(--ink)}
+.notes .term .sec{display:block;font:700 20px var(--sans);color:var(--orange);margin-top:4px;letter-spacing:.08em}
+/* two panels */
+.tc{background:var(--blue-l);border:1px solid var(--line);border-radius:8px;padding:24px 36px;display:flex;flex-direction:column;gap:4px}
+.tch{font:700 30px var(--sans);color:var(--navy);margin-bottom:8px}
+.tcl{font:700 42px/1.2 var(--sans);min-height:76px;display:flex;align-items:center}
+.verd{margin-top:12px;border-radius:999px;padding:10px 26px;font:700 32px var(--sans);align-self:flex-start}
+.verd.ok{background:var(--green-l);color:var(--green)}.verd.warn{background:var(--warm);color:var(--orange)}
+.vocab.three{grid-template-columns:repeat(3,1fr);flex:none}.vocab.three p{font-size:30px}
+.call.bad3{background:var(--red-l);border-color:#EDC3BC}.call.bad3 .ico,.call.bad3 b{color:var(--red)}
+/* answer cards */
+.acards{display:grid;gap:26px;flex:1;min-height:0}.acards.n1{grid-template-columns:1fr}.acards.n2{grid-template-columns:1fr 1fr}
+.acards.n3{grid-template-columns:repeat(3,1fr)}.acards.n4{grid-template-columns:repeat(4,1fr)}
+.acard{background:var(--card);border:1px solid var(--line);border-top:8px solid var(--green);border-radius:8px;padding:22px 30px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.acard.t-navy{border-top-color:var(--navy)}
+.ac-top{display:flex;align-items:flex-start;gap:18px}.ac-top .badge{flex:none}
+.acard .qq{flex:1;margin:6px 0 0;font-size:26px;color:var(--muted);line-height:1.35}
+.acard.t-navy .qq{font:700 44px/1.2 var(--sans);color:var(--ink);margin-top:0}
+.work{display:flex;flex-direction:column;gap:4px}.work .bs{margin:4px 0 8px 8px}
+.wl2{display:flex;justify-content:space-between;align-items:center;gap:12px;font:700 38px/1.2 var(--sans);color:var(--ink);min-height:62px}
+.wl2.prose{font:400 28px var(--sans);color:var(--body)}
+.mk{color:var(--green);font:700 24px var(--sans);white-space:nowrap}
+.apill{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--green-l);border:1px solid #BFDCCB;border-radius:8px;
+  color:var(--green);font:700 34px var(--sans);padding:10px 24px;margin-top:6px}
+.acards.n1 .wl2,.acards.n2 .wl2{font-size:48px;min-height:80px}.acards.n1 .qq,.acards.n2 .qq{font-size:30px}
+.acards.n1 .apill,.acards.n2 .apill{font-size:42px;padding:14px 28px}.acards.n1 .wl2.prose,.acards.n2 .wl2.prose{font-size:32px}
+.acards.n1 .cwhy,.acards.n2 .cwhy{font-size:28px}.acards.n3 .wl2{font-size:42px;min-height:70px}
+.acards.small .wl2{font-size:32px}.acards.small .apill{font-size:30px}
+.cwhy{font-size:24px;color:var(--body);margin-top:10px;line-height:1.35}
+.check{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--blue-l);border-radius:8px;padding:10px 16px;font-size:22px}
+.check label{font-weight:700;color:var(--navy)}
+.check input{flex:1;min-width:0;border:2px solid var(--line);border-radius:6px;padding:6px 12px;font:24px var(--sans);background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
+.check button,.mach button,.m2-in button{all:unset;cursor:pointer;background:var(--navy);color:#fff;font:700 22px var(--sans);padding:8px 18px;border-radius:6px}
+.fb{flex-basis:100%;font-weight:700;min-height:1.2em}.fb.ok{color:var(--green)}.fb.no{color:var(--red)}.fb.near{color:var(--orange)}
+/* machines */
+.mach{display:grid;grid-template-columns:560px 1fr;gap:50px;align-items:start}
+.mach-in{background:var(--navy);border-radius:10px;padding:46px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.mach-in label{color:#C9D4E0;font:700 20px var(--sans);letter-spacing:.14em}
+.mach-in input{width:260px;text-align:center;font:700 84px var(--sans);border:0;border-radius:10px;padding:6px;background:var(--paper);color:var(--ink);user-select:text;-webkit-user-select:text}
+.mach-bar{width:300px;height:8px;background:var(--paper);border-radius:4px}
+.mach-in button{background:var(--orange);font-size:34px;padding:14px 70px;margin-top:10px}
+.mach-out{display:flex;flex-direction:column;gap:14px}
+.mo{display:flex;gap:24px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 28px;align-items:center;min-height:126px}
+.mo-h{font:700 20px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.mo-v{font:700 42px var(--sans);display:flex;flex-wrap:wrap;align-items:center;gap:12px}.mo-r{font-size:24px;color:var(--muted);margin-top:4px}
+.pf{display:inline-block;border-radius:8px;padding:0 14px}.pf.good{background:var(--green-l);color:var(--green)}.pf.bad{background:var(--red-l);color:var(--red)}
+.vd-t{color:var(--green)}.vd-r{color:var(--orange)}
+.m2-in{display:flex;flex-wrap:wrap;align-items:center;gap:20px;background:var(--navy);border-radius:10px;padding:18px 34px}
+.m2-in input{width:300px;text-align:center;font:700 52px var(--sans);border:0;border-radius:10px;padding:6px;background:var(--paper);color:var(--ink);user-select:text;-webkit-user-select:text}
+.m2-in select{font:700 52px var(--sans);border-radius:10px;border:0;padding:0 14px;background:var(--orange);color:#fff}
+.m2-in button{background:var(--orange);font-size:34px;padding:12px 50px}.m2-hint{color:#C9D4E0;font-size:24px}
+.m2-steps{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(4,auto);grid-auto-flow:column;gap:12px 24px;align-content:start}
+.m2-steps li{display:grid;grid-template-columns:52px auto 1fr;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 24px;min-height:80px}
+.m2-steps .mo-n{width:48px;height:48px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 24px var(--sans)}
+.m2-steps li.ans{background:var(--green-l);border-color:#BFDCCB;color:var(--green)}.m2-steps li.ans .mo-n{background:var(--green)}
+.m2-m{font:700 38px var(--sans)}.m2-r{font-size:26px;color:var(--muted);border-left:6px solid var(--orange);padding-left:16px}
+.m2-err{color:var(--red);font-size:28px;font-weight:700}
+/* finger-vote sort */
+.sort.five{grid-template-columns:repeat(5,1fr)}.scard .dev.mth{font:700 56px/1.1 var(--sans)}
+.scard .ans small{font-size:19px}
+/* hinge: maths options */
+.hinge h2.hq{font:700 48px/1.2 var(--sans)}
+.ht p.mth{font:700 44px/1.15 var(--sans)}.ht .why{font-size:22px}
+/* teacher notes (S) */
+#snotes .sheet p{font-size:18px;line-height:1.5;margin:0}
+
+/* ---- Week 11 additions (build_week11_interactive.js) ---- */
+.tbl.small{font-size:26px}.tbl.small td,.tbl.small th{padding:14px 20px}.tbl.tight td,.tbl.tight th{padding:11px 20px}
+.cap{margin:0;font-size:22px;color:var(--muted);font-style:italic}
+pre.code{margin:0;font:400 28px/1.45 var(--mono);color:var(--ink);background:var(--blue-l);border:1px solid var(--line);border-radius:6px;padding:16px 22px;white-space:pre}
+pre.code.inline{display:inline-block;font-size:26px;padding:10px 16px}
+.codecard{display:flex;flex-direction:column;gap:10px}.codecard .lbl{font:700 18px var(--sans);letter-spacing:.16em;color:var(--sand)}
+.q.hot{border-left-color:var(--orange)}
+.flow.chips .fbox{font-size:24px;padding:26px 10px}.flow.chips .farr{width:46px;font-size:28px}
+.notes.tight{padding:22px 36px;gap:10px 26px}.notes.tight .def{font-size:25px}
+.figcard{background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px;display:flex;align-items:center;justify-content:center;flex:1;min-width:0}
+.figcard img{max-width:100%;max-height:600px;display:block}
+.tbl.tt{width:auto;font:400 28px var(--mono);text-align:center}.tbl.tt th{text-align:center;padding:12px 22px;font:700 22px var(--sans)}
+.tbl.tt td{padding:7px 22px;text-align:center}.tbl.tt th.wk{background:var(--navy2)}.tbl.tt th.out{background:var(--orange)}
+.tbl.tt td.out{font-weight:700;color:var(--orange)}.tbl.tt tr.hotrow td{background:var(--warm)}
+.tbl.tt td.slot::before{left:50%;transform:translateX(-50%);top:6px}
+.tbl.tt.mini{font-size:21px}.tbl.tt.mini th{font-size:17px;padding:6px 14px}.tbl.tt.mini td{padding:2px 14px}
+.ansrow .aa.sm{font-size:21px;color:var(--muted);margin-top:6px}
+.ansrow.wide>div{display:flex;flex-direction:column}
+.ansimgs{display:flex;gap:24px;align-items:flex-start}.ansimgs figure{margin:0;flex:1;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.ansimgs img{max-width:100%;max-height:330px}.ansimgs figcaption{font-size:20px;color:var(--muted)}
+.rows.sc2{display:grid;grid-template-columns:1fr 1fr}.rows.sc2 .q{padding:16px 30px}.rows.sc2 .q p{font-size:25px}.rows.sc2 .badge{width:40px;height:40px;font-size:20px}
+/* hinge questions */
+.hinge h2.hq{font-size:50px}
+.hbody{gap:18px}
+.hopts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.hbody:has(.hfig){display:grid;grid-template-columns:640px 1fr;grid-template-rows:1fr auto auto;column-gap:30px}
+.hbody .hfig{grid-row:1/2}.hopts.withfig{grid-template-columns:1fr}.hopts.withfig .hopt{padding:12px 18px}.hbody:has(.hfig) .hbar,.hbody:has(.hfig) .hdec{grid-column:1/-1}
+.hopt{position:relative;display:grid;grid-template-columns:64px 1fr auto;gap:18px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:18px 20px;transition:opacity .4s,border-color .4s,background .4s}
+.hl{width:64px;height:64px;border-radius:12px;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 38px var(--sans)}
+.ht p{margin:0;font-size:28px;line-height:1.3;color:var(--ink)}.ht p.mono{font:700 32px var(--mono)}
+.ht .why{font-size:21px;color:var(--red);margin-top:6px;line-height:1.3}.ht .why.ok{color:var(--green);font-weight:700}
+.slide:has(.hflag.shown) .hopt:not(.right){opacity:.62}
+.slide:has(.hflag.shown) .hopt.right{border-color:var(--green);background:var(--green-l)}.slide:has(.hflag.shown) .hopt.right .hl{background:var(--green)}
+.tally{display:flex;align-items:center;gap:6px;background:var(--blue-l);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tb{all:unset;cursor:pointer;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:700 24px var(--sans);color:var(--navy)}
+.tb:hover,.tb:focus-visible{background:var(--orange);color:#fff}
+.tc{min-width:34px;text-align:center;font:700 26px var(--sans);color:var(--navy);font-variant-numeric:tabular-nums}
+.hbar{display:flex;align-items:center;gap:22px;min-height:56px}
+.hbar .up{font:700 30px var(--sans);color:#fff;background:var(--orange);padding:10px 24px;border-radius:999px}
+.hbar .hres{font:700 26px var(--sans);color:var(--navy)}
+.hflag{display:none}
+.hdec b.verdict.go{color:var(--green)}.hdec b.verdict.stop{color:var(--red)}
+#hlog table{font-size:14px}#hlog td,#hlog th{padding:6px 8px;border-top:1px solid var(--line);text-align:left}
+#hlog .acts{display:flex;gap:10px;margin-top:14px}#hlog .acts button{all:unset;cursor:pointer;background:var(--navy);color:#fff;padding:8px 14px;border-radius:6px;font:700 14px var(--sans)}
+#hlog .acts button.clr{background:var(--red)}
+</style>
+
+</head>
+<body data-deck="G8 W11 L1" data-group="">
+<div id="viewport">
+<div id="stage">
+
+<section class="slide dark cover" data-title="Fractions · Dividing fractions and making calculations easier">
+
+  <div class="left"><p class="eyebrow">GRADE 8 MATHS · UNIT 8</p><h1>Fractions</h1>
+  <p class="sub">Dividing fractions and making calculations easier</p><p class="meta">STAGE 9   ·   9Nf.03   ·   9Nf.04   ·   90 MIN   ·   WITH WORKSHEET</p></div>
+  <div class="panel mpanel"><small class="w top" style="--d:.1s">KEEP · CHANGE · FLIP</small><span class="w" style="--d:0.3s"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></span><span class="w proc" style="--d:0.8s">= <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></span>
+  <small class="w" style="--d:1.4s">Dividing is multiplying by the reciprocal.</small></div>
+</section>
+<section class="slide" data-title="Do Now" data-foot="Do Now">
+<div class="hd"><div class="tags"><button class="timer big" data-timer-id="donow" data-seconds="300" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">5:00</span></button><span class="tag">STARTER · LAST WEEK</span></div><h2>Do Now</h2><p class="lede">Three questions from last week. Work on your own, no calculator.</p></div><div class="body" style="gap:26px"><div class="q plain lg"><span class="numtxt">1</span><p>Work out  <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">9</span></span></span>.  Cancel first.</p></div><div class="q plain lg"><span class="numtxt">2</span><p>Work out  <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> × <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span>.</p></div><div class="q plain lg"><span class="numtxt">3</span><p>Work out  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> − <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span>.</p></div><div class="call"><span class="ico">★</span><div><b>Tip</b><p>Show every step on its own line. Q2 needs improper fractions first.</p></div></div></div>
+</section>
+<section class="slide" data-title="Do Now — answers" data-foot="Do Now · Answers">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Do Now · Answers</p><h2>Do Now — answers</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n3"><div class="acard t-green"><div class="ac-top"><span class="badge g">1</span><p class="qq mth"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">9</span></span></span></p></div><div class="work"><div class="wl2 prose" data-step="1" data-fx="left"><span>Cancel 4, 8 and 3, 9</span></div><div class="wl2" data-step="2" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></span></div><div class="cwhy">Cancelling first keeps the numbers small.</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">2</span><p class="qq mth"><span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> × <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></p></div><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">3</span></span></span></span></div><div class="wl2" data-step="5" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">1</span></span></span></span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; 4</span></div><div class="cwhy">Improper first. Never multiply the parts separately.</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">3</span><p class="qq mth"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> − <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></p></div><div class="work"><div class="wl2" data-step="7" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span> − <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">3</span></span></span></span></div><div class="wl2" data-step="8" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">27</span><span class="de">12</span></span></span> − <span class="mx"><span class="fr"><span class="nu">20</span><span class="de">12</span></span></span></span></div></div><div data-step="9" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="fr"><span class="nu">7</span><span class="de">12</span></span></span></span></div><div class="cwhy">Estimate: <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> − <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span>  ✓</div></div></div></div>
+</section>
+<section class="slide" data-title="Learning objectives" data-foot="Learning objectives">
+<div class="hd"><p class="eyebrow">Learning objectives</p><h2>What this lesson covers</h2></div><div class="body" style="gap:24px"><div class="call objs" style="background:var(--blue-l);border-color:var(--line)"><span class="ico" style="color:var(--navy)">◆</span><div><b style="color:var(--navy)">Cambridge framework</b><div class="objc"><span class="tag navy">9Nf.03</span><p>Estimate, multiply and divide fractions, interpret division as a multiplicative inverse, and cancel common factors before multiplying or dividing.</p></div><div class="objc"><span class="tag navy">9Nf.04</span><p>Use knowledge of the laws of arithmetic, inverse operations, equivalence and order of operations to simplify calculations containing decimals and fractions.</p></div></div></div><p class="eyebrow" style="color:var(--green);margin-top:4px">Success criteria — by the end I can…</p><div class="rows" style="gap:14px"><div class="q plain" data-step="1" data-fx="left" style="border-left:6px solid var(--green)"><span class="badge g">✓</span><p style="font-weight:400">I can divide by a fraction by multiplying by its reciprocal.</p></div><div class="q plain" data-step="2" data-fx="left" style="border-left:6px solid var(--green)"><span class="badge g">✓</span><p style="font-weight:400">I can divide mixed numbers, cancelling after I flip.</p></div><div class="q plain" data-step="3" data-fx="left" style="border-left:6px solid var(--green)"><span class="badge g">✓</span><p style="font-weight:400">I can solve division problems and check with the inverse.</p></div><div class="q plain" data-step="4" data-fx="left" style="border-left:6px solid var(--green)"><span class="badge g">✓</span><p style="font-weight:400">I can change decimals to fractions to make a calculation easier.</p></div></div></div>
+</section>
+<section class="slide dark divider" data-title="1 · Dividing by a fraction">
+
+  <div class="left"><span class="big">1</span><h2>Dividing by a fraction</h2><p class="lede">9Nf.03 — interpret division as a multiplicative inverse: ÷ a fraction is × its reciprocal.</p></div>
+  <div class="reveal"><span class="lbl">KEEP · CHANGE · FLIP</span><span class="v mth"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></span>
+  <span class="arr" data-step="1" data-fx="fade">▼</span><span class="v o mth" data-step="1" data-fx="pop">= <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></span>
+  <span class="lbl" data-step="1" data-fx="fade">÷ A FRACTION = × ITS RECIPROCAL</span></div>
+</section>
+<section class="slide" data-title="Key words · part 1" data-foot="Key words · Từ khoá">
+<div class="hd"><p class="eyebrow">Key words · Từ khoá</p><h2>Key words — part 1</h2><p class="lede">Say what each word means before it appears.</p></div><table class="tbl wbk"><tr><th style="width:23%">English</th><th class="vi" style="width:22%">Tiếng Việt</th><th>What it means</th><th style="width:20%">Example</th></tr><tr><td class="k">reciprocal</td><td class="vi">số nghịch đảo</td><td class="slot"><span data-step="1" data-fx="fade">The fraction turned upside down.</span></td><td class="slot ex"><span data-step="1" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> → <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></span></td></tr><tr><td class="k">divisor</td><td class="vi">số chia</td><td class="slot"><span data-step="2" data-fx="fade">The number you divide by.</span></td><td class="slot ex"><span data-step="2" data-fx="fade">÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></span></td></tr><tr><td class="k">quotient</td><td class="vi">thương</td><td class="slot"><span data-step="3" data-fx="fade">The answer to a division.</span></td><td class="slot ex"><span data-step="3" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> = <span class="mx"><span class="fr"><span class="nu">15</span><span class="de">8</span></span></span></span></td></tr><tr><td class="k">inverse</td><td class="vi">phép toán ngược</td><td class="slot"><span data-step="4" data-fx="fade">The operation that undoes another.</span></td><td class="slot ex"><span data-step="4" data-fx="fade">× undoes ÷</span></td></tr><tr><td class="k">how many … in</td><td class="vi">có bao nhiêu … trong</td><td class="slot"><span data-step="5" data-fx="fade">A division question in words.</span></td><td class="slot ex"><span data-step="5" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span>s in 3 → 3 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></span></td></tr></table>
+</section>
+<section class="slide" data-title="Think first · Before we divide" data-foot="Think first">
+<div class="hd"><div class="tags"><span class="tag">Talk to your partner</span><button class="timer" data-timer-id="t1" data-seconds="30" data-start-at="4" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">0:30</span></button></div><p class="eyebrow">Think first · Before we start</p><h2>Before we divide</h2><p class="lede">Answer each one in your book first. Thirty seconds, then tell your partner.</p></div><div class="body" style="gap:18px"><div class="q purple" data-step="1"><span class="badge p">?</span><p style="font-weight:400">How many halves are there in 3?  Write it as a division.</p></div><div class="q purple" data-step="2"><span class="badge p">?</span><p style="font-weight:400">Work out  3 × 2.  Compare it with your answer above.  What do you notice?</p></div><div class="q purple" data-step="3"><span class="badge p">?</span><p style="font-weight:400">How many quarters are there in 3?  What is  3 × 4?</p></div><div class="call" data-step="4"><span class="ico">★</span><div><b>No answers yet</b><p>The next slides answer these. Write your own answer first, then check.</p></div></div></div>
+</section>
+<section class="slide" data-title="How many quarters?" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 1 · Solution</p><h2>How many quarters?</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  3 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span>.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">3 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span></div><div class="sg">=</div><div class="rhs">how many quarters in 3?</div><div class="rs">Read it as a question</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"></div><div class="sg">=</div><div class="rhs">4 + 4 + 4 = 12</div><div class="rs">4 quarters in each whole</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs">3 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span></div><div class="sg">=</div><div class="rhs">3 <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">4</span><span class="de">1</span></span></span> = 12</div><div class="rs">Same as × the reciprocal</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: 12<span class="anote">Dividing by less than 1 → bigger  ✓</span></p></div></div>
+</section>
+<section class="slide" data-title="Keep, change, flip" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 2 · Solution</p><h2>Keep, change, flip</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span>.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></div><div class="rs">Keep, change ÷ to ×, flip</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">15</span><span class="de">8</span></span></span></div><div class="rs">Nothing cancels; multiply</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">7</span><span class="de">8</span></span></span></div><div class="rs">Make mixed</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">7</span><span class="de">8</span></span></span><span class="anote">Dividing by less than 1 → bigger  ✓</span></p></div></div>
+</section>
+<section class="slide" data-title="Watch out · Flipping the wrong fraction" data-foot="Common mistake">
+<div class="hd" style="flex-direction:row;align-items:center;gap:28px"><span class="warnbadge">!</span><div style="display:flex;flex-direction:column;gap:10px"><p class="eyebrow" style="color:var(--red)">Watch out</p><h2>Flipping the wrong fraction</h2></div></div><div class="body" style="gap:26px"><div class="wr"><div class="wcard bad" data-play="1"><b>WRONG</b><div class="mlines"><div class="wl"><span class="strike"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> = <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">3</span></span></span> × <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></span></div><div class="wl"><span class="strike">= <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">15</span></span></span></span></div></div><p>Flipped the first fraction. The answer is smaller than <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span>, but dividing by <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> should make it bigger.</p></div><div class="wcard good" data-step="1"><b>RIGHT</b><div class="mlines"><div class="wl"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></div><div class="wl">= <span class="mx"><span class="fr"><span class="nu">15</span><span class="de">8</span></span></span> = <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">7</span><span class="de">8</span></span></span></div></div><p>Keep the first. Flip only the one you divide by.</p></div></div><div class="call" data-step="2"><span class="ico">★</span><div><b>How to fix it</b><p>Keep, change, flip — the first fraction never moves. Then check: ÷ by less than 1 gives a bigger answer.</p></div></div></div>
+</section>
+<section class="slide" data-title="In your notes · Dividing by a fraction" data-foot="In your notes">
+<div class="hd"><div class="tags"><span class="tag navy">In your notes</span><span class="tag orange">Copy this</span></div><h2>Dividing by a fraction</h2></div><div class="notes"><span class="n">1</span><span class="term">Reciprocal<span class=vi>số nghịch đảo</span></span><span class="def"><span class="tx">Turn the fraction upside down.</span><span class="ml"><span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> → <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span>     5 = <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">1</span></span></span> → <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">5</span></span></span></span></span><span class="div"></span><span class="n">2</span><span class="term">The rule<span class=vi>quy tắc</span></span><span class="def"><span class="tx">Keep the first fraction, change ÷ to ×, flip the second.</span></span><span class="div"></span><span class="n">3</span><span class="term">Example<span class=vi>ví dụ</span></span><span class="def"><span class="ml"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> = <span class="mx"><span class="fr"><span class="nu">15</span><span class="de">8</span></span></span> = <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">7</span><span class="de">8</span></span></span></span></span><span class="div"></span><span class="n">4</span><span class="term">Why<span class=vi>vì sao</span></span><span class="def"><span class="tx">3 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> asks “how many quarters in 3?” — 12, which is 3 × 4.</span></span></div>
+</section>
+<section class="slide" data-title="Now do · Worksheet Section A" data-foot="Worksheet · Section A">
+<div class="hd"><div class="tags"><span class="tag orange">Now do</span><span class="tag">Worksheet · Section A</span><button class="timer big" data-timer-id="t2" data-seconds="480" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">8:00</span></button></div><h2>Question 1, parts (a) to (d)</h2><p class="lede">Dividing by a fraction · 8 minutes. Keep, change, flip. Write the × line every time.</p></div><div class="body" style="gap:14px"><div class="lab"><span class="pill">(a)</span><p>Reciprocals: a whole number is over 1.</p></div><div class="lab"><span class="pill o">(b)</span><p>A whole number divided by a fraction.</p></div><div class="lab"><span class="pill p">(c)</span><p>Fraction ÷ fraction. Give a mixed number.</p></div><div class="lab"><span class="pill g">(d)</span><p>Fraction ÷ fraction. Simplify at the end.</p></div><div class="call"><span class="ico">★</span><div><b>What the marks are for</b><p>One mark for the × reciprocal line, one for the answer in simplest form.</p></div></div></div>
+</section>
+<section class="slide" data-title="Section A — answers  (1 of 2)" data-foot="Answers · Worksheet Section A">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section A</p><h2>Section A — answers  (1 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">a</span><p class="qq mth">Write the reciprocal of  <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span>,  6  and  <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">9</span></span></span>.</p><span class="mtag">2 marks</span></div><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span> → <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">5</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>6 → <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">6</span></span></span>     <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">9</span></span></span> → 9</span><b class=mk>(1)</b></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">5</span></span></span>,  <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">6</span></span></span>,  9</span></div><div class="cwhy">One mark for each two correct.</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">b</span><p class="qq mth">Work out 4 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span>.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="6" onsubmit="return checkAns(this)"><label for="chk-118615320">Your answer</label><input id="chk-118615320" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="4" data-fx="left"><span>4 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">12</span><span class="de">2</span></span></span></span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; 6</span><b class="mk">(1)</b></div><div class="cwhy">Check: 6 × <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> = 4  ✓</div></div></div></div>
+</section>
+<section class="slide" data-title="Section A — answers  (2 of 2)" data-foot="Answers · Worksheet Section A">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section A</p><h2>Section A — answers  (2 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">c</span><p class="qq mth">Work out <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span>.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="1 1/9" onsubmit="return checkAns(this)"><label for="chk-2771528478">Your answer</label><input id="chk-2771528478" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> × <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">3</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">20</span><span class="de">18</span></span></span> = <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">9</span></span></span></span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">9</span></span></span></span><b class="mk">(1)</b></div><div class="cwhy">Accept <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">9</span></span></span>. Bigger than <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span>  ✓</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">d</span><p class="qq mth">Work out <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">9</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span>.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="5/18" onsubmit="return checkAns(this)"><label for="chk-636745558">Your answer</label><input id="chk-636745558" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">2</span><span class="de">9</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">4</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">36</span></span></span></span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">18</span></span></span></span><b class="mk">(1)</b></div><div class="cwhy">Or cancel 2 and 4 first: <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">9</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span>.</div></div></div></div>
+</section>
+<section class="slide dark divider" data-title="2 · Flip, then cancel">
+
+  <div class="left"><span class="big">2</span><h2>Flip, then cancel</h2><p class="lede">9Nf.03 — cancel common factors after flipping, and divide mixed numbers.</p></div>
+  <div class="reveal"><span class="lbl">IMPROPER · FLIP · CANCEL</span><span class="v mth"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">25</span></span></span></span>
+  <span class="arr" data-step="1" data-fx="fade">▼</span><span class="v o mth" data-step="1" data-fx="pop">= <span class="mx"><span class="fr"><span class="nu">14</span><span class="de">5</span></span></span> × <span class="mx"><span class="fr"><span class="nu">25</span><span class="de">28</span></span></span></span>
+  <span class="lbl" data-step="1" data-fx="fade">NEVER CANCEL ACROSS A ÷ SIGN</span></div>
+</section>
+<section class="slide" data-title="Key words · part 2" data-foot="Key words · Từ khoá">
+<div class="hd"><p class="eyebrow">Key words · Từ khoá</p><h2>Key words — part 2</h2><p class="lede">Say what each word means before it appears.</p></div><table class="tbl wbk"><tr><th style="width:23%">English</th><th class="vi" style="width:22%">Tiếng Việt</th><th>What it means</th><th style="width:20%">Example</th></tr><tr><td class="k">cancel</td><td class="vi">giản ước</td><td class="slot"><span data-step="1" data-fx="fade">Divide a top and a bottom by the same number.</span></td><td class="slot ex"><span data-step="1" data-fx="fade">18 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> → 9 × 3</span></td></tr><tr><td class="k">mixed number</td><td class="vi">hỗn số</td><td class="slot"><span data-step="2" data-fx="fade">A whole number and a fraction.</span></td><td class="slot ex"><span data-step="2" data-fx="fade"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span></span></td></tr><tr><td class="k">improper fraction</td><td class="vi">phân số lớn hơn 1</td><td class="slot"><span data-step="3" data-fx="fade">Numerator bigger than the denominator.</span></td><td class="slot ex"><span data-step="3" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">14</span><span class="de">5</span></span></span></span></td></tr><tr><td class="k">estimate</td><td class="vi">ước lượng</td><td class="slot"><span data-step="4" data-fx="fade">A rough answer from rounded numbers.</span></td><td class="slot ex"><span data-step="4" data-fx="fade">3 ÷ 1 = 3</span></td></tr><tr><td class="k">proper fraction</td><td class="vi">phân số nhỏ hơn 1</td><td class="slot"><span data-step="5" data-fx="fade">Numerator smaller than the denominator.</span></td><td class="slot ex"><span data-step="5" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span></span></td></tr></table>
+</section>
+<section class="slide" data-title="Think first · Before we cancel" data-foot="Think first">
+<div class="hd"><div class="tags"><span class="tag">Talk to your partner</span><button class="timer" data-timer-id="t3" data-seconds="30" data-start-at="4" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">0:30</span></button></div><p class="eyebrow">Think first · Before we start</p><h2>Before we cancel</h2><p class="lede">Answer each one in your book first. Thirty seconds, then tell your partner.</p></div><div class="body" style="gap:18px"><div class="q purple" data-step="1"><span class="badge p">?</span><p style="font-weight:400">In  18 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span>,  can you cancel the 18 and the 3 straight away?  Why not?</p></div><div class="q purple" data-step="2"><span class="badge p">?</span><p style="font-weight:400">Estimate  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">25</span></span></span>.</p></div><div class="q purple" data-step="3"><span class="badge p">?</span><p style="font-weight:400">Mai says  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">8</span></span></span> = 2 ÷ 1 + <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">8</span></span></span>.  Do you agree?</p></div><div class="call" data-step="4"><span class="ico">★</span><div><b>No answers yet</b><p>The next slides answer these. Write your own answer first, then check.</p></div></div></div>
+</section>
+<section class="slide" data-title="Flip first, then cancel" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 3 · Solution</p><h2>Flip first, then cancel</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  18 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span>.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">18 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></div><div class="sg">=</div><div class="rhs">18 <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span></div><div class="rs">Keep, change, flip</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="c-o">9</span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de"><span class="c-o">1</span></span></span></span></div><div class="rs">Cancel 18 and 2 by 2</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs">27</div><div class="rs">Multiply</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: 27<span class="anote">Bigger than 18  ✓</span></p></div></div>
+</section>
+<section class="slide" data-title="Mixed numbers" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 4 · Solution</p><h2>Mixed numbers</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">25</span></span></span>.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">25</span></span></span></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">14</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">28</span><span class="de">25</span></span></span></div><div class="rs">Both improper</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">14</span><span class="de">5</span></span></span> <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">25</span><span class="de">28</span></span></span></div><div class="rs">Keep, change, flip</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu"><span class="c-o">1</span></span><span class="de"><span class="c-o">1</span></span></span></span> × <span class="mx"><span class="fr"><span class="nu"><span class="c-o">5</span></span><span class="de"><span class="c-o">2</span></span></span></span></div><div class="rs">Cancel 14, 28 by 14 and 25, 5 by 5</div></div><div class="srow" data-step="4" data-fx="left"><span class="badge o">4</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> = <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></div><div class="rs">Multiply; make mixed</div></div></div><div class="call ok" data-step="5"><span class="ico">✓</span><p class="mth">Answer: <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span><span class="anote">Estimate: 3 ÷ 1 = 3  ✓</span></p></div></div>
+</section>
+<section class="slide" data-title="Watch out · Dividing the parts separately" data-foot="Common mistake">
+<div class="hd" style="flex-direction:row;align-items:center;gap:28px"><span class="warnbadge">!</span><div style="display:flex;flex-direction:column;gap:10px"><p class="eyebrow" style="color:var(--red)">Watch out</p><h2>Dividing the parts separately</h2></div></div><div class="body" style="gap:26px"><div class="wr"><div class="wcard bad" data-play="1"><b>WRONG</b><div class="mlines"><div class="wl"><span class="strike"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">8</span></span></span> = 2 ÷ 1 + <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">8</span></span></span></span></div><div class="wl"><span class="strike">= 2 + 2 = 4</span></div></div><p>Divided the wholes and the fractions separately, like Mai.</p></div><div class="wcard good" data-step="1"><b>RIGHT</b><div class="mlines"><div class="wl"><span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">8</span></span></span> = <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">9</span></span></span></div><div class="wl">= <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">1</span></span></span> = 2</div></div><p>Improper fractions first. Estimate: 2 ÷ 1 = 2  ✓</p></div></div><div class="call" data-step="2"><span class="ico">★</span><div><b>How to fix it</b><p>Mixed numbers always become improper fractions before you multiply or divide.</p></div></div></div>
+</section>
+<section class="slide" data-title="Predict before you divide" data-foot="Bigger Or Smaller?">
+<div class="hd"><p class="eyebrow">Bigger Or Smaller?</p><h2>Predict before you divide</h2></div><div class="body" style="gap:24px"><div class="two"><div class="tc"><div class="tch mth">÷ a proper fraction</div><div class="tcl mth" data-step="1" data-fx="left">8 ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> = 16</div><div class="tcl mth" data-step="2" data-fx="left">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> = 8</div><div class="tcl mth" data-step="3" data-fx="left">10 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span> = 25</div><div class="verd ok" data-step="4" data-fx="pop">✓&nbsp; answer is bigger</div></div><div class="tc"><div class="tch mth">÷ a mixed or improper fraction</div><div class="tcl mth" data-step="5" data-fx="left">8 ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">3</span></span></span> = 6</div><div class="tcl mth" data-step="6" data-fx="left">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> = 4</div><div class="tcl mth" data-step="7" data-fx="left">10 ÷ <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> = 4</div><div class="verd warn" data-step="8" data-fx="pop">→&nbsp; answer is smaller</div></div></div><div class="call" data-step="9"><span class="ico">★</span><div><b>KEY IDEA</b><p>Dividing by less than 1 makes it bigger. Dividing by more than 1 makes it smaller. The opposite of multiplying.</p></div></div></div>
+</section>
+<section class="slide" data-title="Whole class · Bigger or smaller?" data-foot="Whole-class check">
+<div class="hd"><div class="tags"><span class="tag green">Whole class · fingers up on three</span><button class="timer" data-timer-id="t4" data-seconds="20" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">0:20</span></button></div><h2>Bigger or smaller?</h2><p class="lede">Compare each answer with the first number. Decide before you tap.</p></div><div class="key">Show fingers: <span><i style="background:var(--navy)">1</i>Bigger</span><span><i style="background:var(--orange)">2</i>Smaller</span></div><div class="sort"><div class="scard"><span class="n">A</span><span class="dev mth">12 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span></span><span class="ans" data-step="1" data-fx="pop">1 · Bigger<small>÷ less than 1 → bigger.  = 16</small></span></div><div class="scard"><span class="n">B</span><span class="dev mth">12 ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></span><span class="ans o" data-step="2" data-fx="pop">2 · Smaller<small>÷ more than 1 → smaller.  = 8</small></span></div><div class="scard"><span class="n">C</span><span class="dev mth"><span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">6</span></span></span></span><span class="ans" data-step="3" data-fx="pop">1 · Bigger<small>÷ less than 1 → bigger.  = 4</small></span></div><div class="scard"><span class="n">D</span><span class="dev mth"><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">4</span></span></span></span><span class="ans o" data-step="4" data-fx="pop">2 · Smaller<small>÷ more than 1 → smaller.  = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></small></span></div><div class="scard"><span class="n">E</span><span class="dev mth">10 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">5</span></span></span></span><span class="ans" data-step="5" data-fx="pop">1 · Bigger<small>÷ less than 1 → bigger.  = 25</small></span></div><div class="scard"><span class="n">F</span><span class="dev mth">10 ÷ <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></span><span class="ans o" data-step="6" data-fx="pop">2 · Smaller<small>÷ more than 1 → smaller.  = 4</small></span></div><div class="scard"><span class="n">G</span><span class="dev mth"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">8</span></span></span></span><span class="ans o" data-step="7" data-fx="pop">2 · Smaller<small>÷ more than 1 → smaller.  = <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></small></span></div><div class="scard"><span class="n">H</span><span class="dev mth"><span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">15</span></span></span></span><span class="ans" data-step="8" data-fx="pop">1 · Bigger<small>÷ less than 1 → bigger.  = 6</small></span></div></div>
+</section>
+<section class="slide" data-title="The fraction machine" data-foot="Try it">
+<div class="hd"><div class="tags"><span class="tag orange">Try it</span><span class="tag">Interactive</span></div><h2>The fraction machine</h2><p class="lede">Type a division. The machine shows every step: improper, flip, cancel, multiply.</p></div><form class="mach2" onsubmit="return runMachine2(this)">
+<div class="m2-in"><input id="m2-a" value="2 4/5" autocomplete="off" aria-label="First number">
+<select id="m2-op" aria-label="Operation"><option>×</option><option selected>÷</option></select>
+<input id="m2-b" value="1 3/25" autocomplete="off" aria-label="Second number"><button type="submit">Go</button><span class="m2-hint">Type 3/4, 2 4/5 or 12</span></div>
+<ol class="m2-steps" aria-live="polite"></ol></form>
+</section>
+<section class="slide" data-title="In your notes · Flip, then cancel" data-foot="In your notes">
+<div class="hd"><div class="tags"><span class="tag navy">In your notes</span><span class="tag orange">Copy this</span></div><h2>Flip, then cancel</h2></div><div class="notes"><span class="n">1</span><span class="term">Order<span class=vi>thứ tự</span></span><span class="def"><span class="tx">Mixed → improper.  Flip.  Then cancel.  Then multiply.</span></span><span class="div"></span><span class="n">2</span><span class="term">Example<span class=vi>ví dụ</span></span><span class="def"><span class="ml"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">3</span><span class="de">25</span></span></span> = <span class="mx"><span class="fr"><span class="nu">14</span><span class="de">5</span></span></span> × <span class="mx"><span class="fr"><span class="nu">25</span><span class="de">28</span></span></span> = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> = <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></span></span><span class="div"></span><span class="n">3</span><span class="term">Never</span><span class="def"><span class="tx">Cancel across a ÷ sign, or divide the parts of a mixed number separately.</span></span><span class="div"></span><span class="n">4</span><span class="term">Predict<span class=vi>dự đoán</span></span><span class="def"><span class="tx">÷ by less than 1 → bigger.   ÷ by more than 1 → smaller.</span></span></div>
+</section>
+<section class="slide" data-title="Now do · Worksheet Section B" data-foot="Worksheet · Section B">
+<div class="hd"><div class="tags"><span class="tag orange">Now do</span><span class="tag">Worksheet · Section B</span><button class="timer big" data-timer-id="t5" data-seconds="600" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">10:00</span></button></div><h2>Question 2, parts (a) to (d)</h2><p class="lede">Flip, then cancel · 10 minutes. Improper first. Flip, then cancel.</p></div><div class="body" style="gap:14px"><div class="lab"><span class="pill">(a)</span><p>A whole number ÷ a fraction — cancel after you flip.</p></div><div class="lab"><span class="pill o">(b)</span><p>Two cancels.</p></div><div class="lab"><span class="pill p">(c)</span><p>Mixed numbers — improper first.</p></div><div class="lab"><span class="pill g">(d)</span><p>Bigger or smaller? No calculating needed.</p></div><div class="call"><span class="ico">★</span><div><b>What the marks are for</b><p>One mark for the × reciprocal line (with improper fractions in (c)), one for the answer.</p></div></div></div>
+</section>
+<section class="slide" data-title="Section B — answers  (1 of 2)" data-foot="Answers · Worksheet Section B">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section B</p><h2>Section B — answers  (1 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">a</span><p class="qq mth">Work out 12 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span>.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="16" onsubmit="return checkAns(this)"><label for="chk-2322388290">Your answer</label><input id="chk-2322388290" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span>12 × <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">3</span></span></span></span><b class=mk>(1)</b></div><div class="wl2 prose" data-step="2" data-fx="left"><span>Cancel 12 and 3 by 3</span></div><div class="wl2" data-step="3" data-fx="left"><span>= 4 × 4</span></div></div><div data-step="4" data-fx="pop"><div class="apill"><span>✓&nbsp; 16</span><b class="mk">(1)</b></div><div class="cwhy">Bigger than 12  ✓</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">b</span><p class="qq mth">Work out <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">9</span></span></span>.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="3/4" onsubmit="return checkAns(this)"><label for="chk-3590222808">Your answer</label><input id="chk-3590222808" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="5" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> × <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">10</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="6" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span></span></div></div><div data-step="7" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span></span><b class="mk">(1)</b></div><div class="cwhy">÷ by more than 1, so smaller than <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span>  ✓</div></div></div></div>
+</section>
+<section class="slide" data-title="Section B — answers  (2 of 2)" data-foot="Answers · Worksheet Section B">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section B</p><h2>Section B — answers  (2 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">c</span><p class="qq mth">Work out <span class="mx"><span class="mw">3</span><span class="fr"><span class="nu">1</span><span class="de">3</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">9</span></span></span>.</p><span class="mtag">3 marks</span></div><form class="check" data-ans="3" onsubmit="return checkAns(this)"><label for="chk-2755191677">Your answer</label><input id="chk-2755191677" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">10</span><span class="de">3</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">9</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">10</span><span class="de">3</span></span></span> × <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">10</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="3" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">1</span></span></span></span></div></div><div data-step="4" data-fx="pop"><div class="apill"><span>✓&nbsp; 3</span><b class="mk">(1)</b></div><div class="cwhy">Estimate: 3 ÷ 1 = 3  ✓</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">d</span><p class="qq mth">Bigger or smaller than 8?  (i) 8 ÷ <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span>   (ii) 8 ÷ <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span></p><span class="mtag">2 marks</span></div><div class="work"><div class="wl2" data-step="5" data-fx="left"><span>(i) <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> &lt; 1, so bigger</span><b class=mk>(1)</b></div><div class="wl2" data-step="6" data-fx="left"><span>(ii) <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> &gt; 1, so smaller</span><b class=mk>(1)</b></div></div><div data-step="7" data-fx="pop"><div class="apill"><span>✓&nbsp; bigger, smaller</span></div><div class="cwhy">Check: 8 ÷ <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span> = 10,  8 ÷ <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> = 3</div></div></div></div>
+</section>
+<section class="slide dark divider" data-title="3 · Problems and checking">
+
+  <div class="left"><span class="big">3</span><h2>Problems and checking</h2><p class="lede">9Nf.03 — solve division problems in context, and check with the inverse operation.</p></div>
+  <div class="reveal"><span class="lbl">CHECK WITH THE INVERSE</span><span class="v mth">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 16</span>
+  <span class="arr" data-step="1" data-fx="fade">▼</span><span class="v o mth" data-step="1" data-fx="pop">16 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 6  ✓</span>
+  <span class="lbl" data-step="1" data-fx="fade">× UNDOES ÷</span></div>
+</section>
+<section class="slide" data-title="Key words · part 3" data-foot="Key words · Từ khoá">
+<div class="hd"><p class="eyebrow">Key words · Từ khoá</p><h2>Key words — part 3</h2><p class="lede">Say what each word means before it appears.</p></div><table class="tbl wbk"><tr><th style="width:23%">English</th><th class="vi" style="width:22%">Tiếng Việt</th><th>What it means</th><th style="width:20%">Example</th></tr><tr><td class="k">inverse operation</td><td class="vi">phép toán ngược</td><td class="slot"><span data-step="1" data-fx="fade">The operation that undoes another.</span></td><td class="slot ex"><span data-step="1" data-fx="fade">× undoes ÷</span></td></tr><tr><td class="k">check</td><td class="vi">kiểm tra</td><td class="slot"><span data-step="2" data-fx="fade">Use the inverse to test your answer.</span></td><td class="slot ex"><span data-step="2" data-fx="fade">16 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 6</span></td></tr><tr><td class="k">average speed</td><td class="vi">tốc độ trung bình</td><td class="slot"><span data-step="3" data-fx="fade">Distance ÷ time.</span></td><td class="slot ex"><span data-step="3" data-fx="fade">km/h</span></td></tr><tr><td class="k">formula</td><td class="vi">công thức</td><td class="slot"><span data-step="4" data-fx="fade">A rule written with letters.</span></td><td class="slot ex"><span data-step="4" data-fx="fade">speed = <span class="mx"><span class="fr"><span class="nu">distance</span><span class="de">time</span></span></span></span></td></tr><tr><td class="k">how many … in</td><td class="vi">có bao nhiêu … trong</td><td class="slot"><span data-step="5" data-fx="fade">Means divide.</span></td><td class="slot ex"><span data-step="5" data-fx="fade">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span></span></td></tr></table>
+</section>
+<section class="slide" data-title="Think first · Before we solve problems" data-foot="Think first">
+<div class="hd"><div class="tags"><span class="tag">Talk to your partner</span><button class="timer" data-timer-id="t6" data-seconds="30" data-start-at="4" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">0:30</span></button></div><p class="eyebrow">Think first · Before we start</p><h2>Before we solve problems</h2><p class="lede">Answer each one in your book first. Thirty seconds, then tell your partner.</p></div><div class="body" style="gap:18px"><div class="q purple" data-step="1"><span class="badge p">?</span><p style="font-weight:400">12 ÷ 3 = 4.  Write a multiplication that checks it.</p></div><div class="q purple" data-step="2"><span class="badge p">?</span><p style="font-weight:400">Rice is packed in <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> kg bags.  Will 6 kg fill more than 6 bags or fewer?</p></div><div class="q purple" data-step="3"><span class="badge p">?</span><p style="font-weight:400">A car travels 60 km in <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> hour.  What is its speed in km/h?</p></div><div class="call" data-step="4"><span class="ico">★</span><div><b>No answers yet</b><p>The next slides answer these. Write your own answer first, then check.</p></div></div></div>
+</section>
+<section class="slide" data-title="How many bags?" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 5 · Solution</p><h2>How many bags?</h2></div><div class="body" style="gap:20px"><div class="qblue mth">How many <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> kg bags can be filled from 6 kg of rice?</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">“How many … in”</div><div class="sg">→</div><div class="rhs">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span></div><div class="rs">It is a division</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span></div><div class="sg">=</div><div class="rhs">6 <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">8</span><span class="de">3</span></span></span></div><div class="rs">Keep, change, flip</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs">2 × 8 = 16</div><div class="rs">Cancel 6 and 3 by 3</div></div><div class="srow" data-step="4" data-fx="left"><span class="badge o">4</span><div class="lhs">Check</div><div class="sg">:</div><div class="rhs">16 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 6  ✓</div><div class="rs">Inverse: × undoes ÷</div></div></div><div class="call ok" data-step="5"><span class="ico">✓</span><p class="mth">Answer: 16 bags</p></div></div>
+</section>
+<section class="slide" data-title="Average speed" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 6 · Solution</p><h2>Average speed</h2></div><div class="body" style="gap:20px"><div class="qblue mth">A car travels <span class="mx"><span class="mw">155</span><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span> km in <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> hours. Find its average speed.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">speed</div><div class="sg">=</div><div class="rhs">distance ÷ time</div><div class="rs">The formula</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"><span class="mx"><span class="mw">155</span><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span> ÷ <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">1245</span><span class="de">8</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">4</span></span></span></div><div class="rs">Both improper</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">1245</span><span class="de">8</span></span></span> <span class="c-o">×</span> <span class="mx" class="c-o"><span class="fr"><span class="nu">4</span><span class="de">5</span></span></span></div><div class="rs">Keep, change, flip</div></div><div class="srow" data-step="4" data-fx="left"><span class="badge o">4</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">249</span><span class="de">2</span></span></span> = <span class="mx"><span class="mw">124</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span></div><div class="rs">Cancel by 5 and 4</div></div></div><div class="call ok" data-step="5"><span class="ico">✓</span><p class="mth">Answer: <span class="mx"><span class="mw">124</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> km/h<span class="anote">Estimate: 156 ÷ 1.25 ≈ 125  ✓</span></p></div></div>
+</section>
+<section class="slide" data-title="In your notes · Problems and checking" data-foot="In your notes">
+<div class="hd"><div class="tags"><span class="tag navy">In your notes</span><span class="tag orange">Copy this</span></div><h2>Problems and checking</h2></div><div class="notes"><span class="n">1</span><span class="term">Spot ÷</span><span class="def"><span class="tx">“How many … in …”, “share”, speed = distance ÷ time, length = area ÷ width.</span></span><span class="div"></span><span class="n">2</span><span class="term">Example<span class=vi>ví dụ</span></span><span class="def"><span class="ml">6 ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 6 × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">3</span></span></span> = 16 bags</span></span><span class="div"></span><span class="n">3</span><span class="term">Check<span class=vi>kiểm tra</span></span><span class="def"><span class="tx">Multiply your answer by the divisor. You should get back to the start.</span><span class="ml">16 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span> = 6  ✓</span></span><span class="div"></span><span class="n">4</span><span class="term">Units<span class=vi>đơn vị</span></span><span class="def"><span class="tx">Write the units with the answer: bags, km/h, m.</span></span></div>
+</section>
+<section class="slide" data-title="Now do · Worksheet Section C" data-foot="Worksheet · Section C">
+<div class="hd"><div class="tags"><span class="tag orange">Now do</span><span class="tag">Worksheet · Section C</span><button class="timer big" data-timer-id="t7" data-seconds="540" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">9:00</span></button></div><h2>Question 3, parts (a) to (c)</h2><p class="lede">Problems and checking · 9 minutes. Write the division first, then work it out, then check.</p></div><div class="body" style="gap:14px"><div class="lab"><span class="pill">(a)</span><p>How many pieces? It is a division.</p></div><div class="lab"><span class="pill o">(b)</span><p>speed = distance ÷ time.  Improper fractions first.</p></div><div class="lab"><span class="pill p">(c)</span><p>Work it out, then check with the inverse.</p></div><div class="call"><span class="ico">★</span><div><b>What the marks are for</b><p>(b) one mark for the division, one for the flip, one for 70 km/h. (c) the check line earns a mark.</p></div></div></div>
+</section>
+<section class="slide" data-title="Section C — answers  (1 of 2)" data-foot="Answers · Worksheet Section C">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section C</p><h2>Section C — answers  (1 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">a</span><p class="qq mth">How many <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> m pieces can be cut from 8 m of rope?</p><span class="mtag">2 marks</span></div><form class="check" data-ans="12" onsubmit="return checkAns(this)"><label for="chk-1338089778">Your answer</label><input id="chk-1338089778" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span>8 ÷ <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> = 8 × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>= 4 × 3</span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; 12 pieces</span><b class="mk">(1)</b></div><div class="cwhy">Check: 12 × <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">3</span></span></span> = 8  ✓</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">b</span><p class="qq mth">A cyclist rides <span class="mx"><span class="mw">52</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> km in <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> hour. Find her average speed.</p><span class="mtag">3 marks</span></div><form class="check" data-ans="70" onsubmit="return checkAns(this)"><label for="chk-2288543580">Your answer</label><input id="chk-2288543580" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">105</span><span class="de">2</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">105</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">3</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="6" data-fx="left"><span>= 35 × 2</span></div></div><div data-step="7" data-fx="pop"><div class="apill"><span>✓&nbsp; 70 km/h</span><b class="mk">(1)</b></div><div class="cwhy">Cancel 105, 3 by 3 and 4, 2 by 2.</div></div></div></div>
+</section>
+<section class="slide" data-title="Section C — answers  (2 of 2)" data-foot="Answers · Worksheet Section C">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section C</p><h2>Section C — answers  (2 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n1"><div class="acard t-green"><div class="ac-top"><span class="badge g">c</span><p class="qq mth">Work out <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">7</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">5</span></span></span>. Check your answer with the inverse.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="2 6/7" onsubmit="return checkAns(this)"><label for="chk-422382996">Your answer</label><input id="chk-422382996" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">4</span><span class="de">7</span></span></span> × 5 = <span class="mx"><span class="fr"><span class="nu">20</span><span class="de">7</span></span></span></span></div><div class="wl2" data-step="2" data-fx="left"><span>= <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">6</span><span class="de">7</span></span></span></span><b class=mk>(1)</b></div><div class="wl2 prose" data-step="3" data-fx="left"><span>Check: <span class="mx"><span class="fr"><span class="nu">20</span><span class="de">7</span></span></span> × <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">5</span></span></span> = <span class="mx"><span class="fr"><span class="nu">4</span><span class="de">7</span></span></span>  ✓</span><b class=mk>(1)</b></div></div><div data-step="4" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">6</span><span class="de">7</span></span></span></span></div><div class="cwhy">The check line earns the second mark.</div></div></div></div>
+</section>
+<section class="slide dark divider" data-title="4 · Making calculations easier">
+
+  <div class="left"><span class="big">4</span><h2>Making calculations easier</h2><p class="lede">9Nf.04 — change decimals to fractions so you can cancel, then use the order of operations.</p></div>
+  <div class="reveal"><span class="lbl">DECIMAL → FRACTION</span><span class="v mth">1.5 × 1.5 × 16</span>
+  <span class="arr" data-step="1" data-fx="fade">▼</span><span class="v o mth" data-step="1" data-fx="pop">= <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × 16</span>
+  <span class="lbl" data-step="1" data-fx="fade">THEN CANCEL</span></div>
+</section>
+<section class="slide" data-title="Key words · part 4" data-foot="Key words · Từ khoá">
+<div class="hd"><p class="eyebrow">Key words · Từ khoá</p><h2>Key words — part 4</h2><p class="lede">Say what each word means before it appears.</p></div><table class="tbl wbk"><tr><th style="width:23%">English</th><th class="vi" style="width:22%">Tiếng Việt</th><th>What it means</th><th style="width:20%">Example</th></tr><tr><td class="k">strategy</td><td class="vi">chiến lược</td><td class="slot"><span data-step="1" data-fx="fade">A plan for doing a calculation.</span></td><td class="slot ex"><span data-step="1" data-fx="fade">decimal → fraction</span></td></tr><tr><td class="k">equivalent</td><td class="vi">tương đương</td><td class="slot"><span data-step="2" data-fx="fade">The same value, written another way.</span></td><td class="slot ex"><span data-step="2" data-fx="fade">0.75 = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span></span></td></tr><tr><td class="k">mentally</td><td class="vi">nhẩm</td><td class="slot"><span data-step="3" data-fx="fade">In your head, without writing.</span></td><td class="slot ex"><span data-step="3" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × 8 = 6</span></td></tr><tr><td class="k">square</td><td class="vi">bình phương</td><td class="slot"><span data-step="4" data-fx="fade">A number times itself.</span></td><td class="slot ex"><span data-step="4" data-fx="fade">(<span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span>)² = <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span></span></td></tr><tr><td class="k">simplify</td><td class="vi">rút gọn</td><td class="slot"><span data-step="5" data-fx="fade">Make a calculation easier or shorter.</span></td><td class="slot ex"><span data-step="5" data-fx="fade"><span class="mx"><span class="fr"><span class="nu">32</span><span class="de">100</span></span></span> × 25 = 8</span></td></tr></table>
+</section>
+<section class="slide" data-title="Think first · Before we make it easier" data-foot="Think first">
+<div class="hd"><div class="tags"><span class="tag">Talk to your partner</span><button class="timer" data-timer-id="t8" data-seconds="30" data-start-at="4" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">0:30</span></button></div><p class="eyebrow">Think first · Before we start</p><h2>Before we make it easier</h2><p class="lede">Answer each one in your book first. Thirty seconds, then tell your partner.</p></div><div class="body" style="gap:18px"><div class="q purple" data-step="1"><span class="badge p">?</span><p style="font-weight:400">Write  0.5,  0.25,  0.75  and  1.5  as fractions.</p></div><div class="q purple" data-step="2"><span class="badge p">?</span><p style="font-weight:400">Which is easier:  1.5 × 1.5 × 16  as decimals, or as  <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × 16 ?</p></div><div class="q purple" data-step="3"><span class="badge p">?</span><p style="font-weight:400">Work out  0.32 × 25  in your head.  Hint: 25 × 4 = 100.</p></div><div class="call" data-step="4"><span class="ico">★</span><div><b>No answers yet</b><p>The next slides answer these. Write your own answer first, then check.</p></div></div></div>
+</section>
+<section class="slide" data-title="Change to fractions, then cancel" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 7 · Solution</p><h2>Change to fractions, then cancel</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  1.5 × 1.5 × 16.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">1.5 × 1.5 × 16</div><div class="sg">=</div><div class="rhs"><span class="mx" class="c-o"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × <span class="mx" class="c-o"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × 16</div><div class="rs">1.5 = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span></div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span> × 16</div><div class="rs">Multiply the fractions</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs">9 × 4 = 36</div><div class="rs">Cancel 4 and 16 by 4</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: 36</p></div></div>
+</section>
+<section class="slide" data-title="Brackets, then indices" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 8 · Solution</p><h2>Brackets, then indices</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  (<span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> + 2.75)² + 2.</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs"><span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> + 2.75</div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> + <span class="mx" class="c-o"><span class="mw">2</span><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> = 3</div><div class="rs">Brackets first: 2.75 = <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span></div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs">3²</div><div class="sg">=</div><div class="rhs">9</div><div class="rs">Indices</div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs">9 + 2</div><div class="sg">=</div><div class="rhs">11</div><div class="rs">Addition last</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: 11</p></div></div>
+</section>
+<section class="slide" data-title="Use what you know about 100" data-foot="Worked example · Solution">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Worked Example 9 · Solution</p><h2>Use what you know about 100</h2></div><div class="body" style="gap:20px"><div class="qblue mth">Work out  0.32 × 5².</div><div class="srows"><div class="srow" data-step="1" data-fx="left"><span class="badge">1</span><div class="lhs">5²</div><div class="sg">=</div><div class="rhs">25</div><div class="rs">Indices first</div></div><div class="srow" data-step="2" data-fx="left"><span class="badge o">2</span><div class="lhs">0.32 × 25</div><div class="sg">=</div><div class="rhs"><span class="mx" class="c-o"><span class="fr"><span class="nu">32</span><span class="de">100</span></span></span> × 25</div><div class="rs">0.32 = <span class="mx"><span class="fr"><span class="nu">32</span><span class="de">100</span></span></span></div></div><div class="srow" data-step="3" data-fx="left"><span class="badge o">3</span><div class="lhs"></div><div class="sg">=</div><div class="rhs"><span class="mx"><span class="fr"><span class="nu">32</span><span class="de">4</span></span></span> = 8</div><div class="rs">Cancel 100 and 25 by 25</div></div></div><div class="call ok" data-step="4"><span class="ico">✓</span><p class="mth">Answer: 8</p></div></div>
+</section>
+<section class="slide" data-title="In your notes · Making calculations easier" data-foot="In your notes">
+<div class="hd"><div class="tags"><span class="tag navy">In your notes</span><span class="tag orange">Copy this</span></div><h2>Making calculations easier</h2></div><div class="notes"><span class="n">1</span><span class="term">Know these<span class=vi>ghi nhớ</span></span><span class="def"><span class="tx">0.25 = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span>   0.5 = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span>   0.75 = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span>   0.2 = <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">5</span></span></span>   1.5 = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span>   2.5 = <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span></span></span><span class="div"></span><span class="n">2</span><span class="term">Strategy<span class=vi>chiến lược</span></span><span class="def"><span class="tx">Change decimals to fractions, then cancel before you multiply.</span></span><span class="div"></span><span class="n">3</span><span class="term">Example<span class=vi>ví dụ</span></span><span class="def"><span class="ml">1.5 × 1.5 × 16 = <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">2</span></span></span> × 16 = 36</span></span><span class="div"></span><span class="n">4</span><span class="term">Order<span class=vi>thứ tự</span></span><span class="def"><span class="tx">The order of operations still applies: brackets, indices, × ÷, + −.</span></span></div>
+</section>
+<section class="slide" data-title="Now do · Worksheet Section D" data-foot="Worksheet · Section D">
+<div class="hd"><div class="tags"><span class="tag orange">Now do</span><span class="tag">Worksheet · Section D</span><button class="timer big" data-timer-id="t9" data-seconds="600" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">10:00</span></button></div><h2>Question 4, parts (a) to (d)</h2><p class="lede">Making calculations easier · 10 minutes. Change every decimal to a fraction first.</p></div><div class="body" style="gap:14px"><div class="lab"><span class="pill">(a)</span><p>2.5 as a fraction, then cancel.</p></div><div class="lab"><span class="pill o">(b)</span><p>Indices first; 0.32 over 100.</p></div><div class="lab"><span class="pill p">(c)</span><p>Brackets, indices, then subtract.</p></div><div class="lab"><span class="pill g">(d)</span><p>Three numbers — change both decimals and the mixed number.</p></div><div class="call"><span class="ico">★</span><div><b>What the marks are for</b><p>One mark for the fraction form, one for the answer.</p></div></div></div>
+</section>
+<section class="slide" data-title="Section D — answers  (1 of 2)" data-foot="Answers · Worksheet Section D">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section D</p><h2>Section D — answers  (1 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">a</span><p class="qq mth">Work out 2.5 × 2.5 × 12.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="75" onsubmit="return checkAns(this)"><label for="chk-3927503700">Your answer</label><input id="chk-3927503700" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> × 12</span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">25</span><span class="de">4</span></span></span> × 12 = 25 × 3</span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; 75</span><b class="mk">(1)</b></div><div class="cwhy">Exercise 8.5 Q5 (Akeno&#x27;s cuboid).</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">b</span><p class="qq mth">Work out 0.32 × 5².</p><span class="mtag">2 marks</span></div><form class="check" data-ans="8" onsubmit="return checkAns(this)"><label for="chk-4265352811">Your answer</label><input id="chk-4265352811" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">32</span><span class="de">100</span></span></span> × 25</span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">32</span><span class="de">4</span></span></span></span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; 8</span><b class="mk">(1)</b></div><div class="cwhy">Indices first: 5² = 25.</div></div></div></div>
+</section>
+<section class="slide" data-title="Section D — answers  (2 of 2)" data-foot="Answers · Worksheet Section D">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section D</p><h2>Section D — answers  (2 of 2)</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">c</span><p class="qq mth">Work out (<span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> + 5.5)² − 1.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="35" onsubmit="return checkAns(this)"><label for="chk-3416769572">Your answer</label><input id="chk-3416769572" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> + <span class="mx"><span class="mw">5</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> = 6</span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>6² − 1 = 36 − 1</span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; 35</span><b class="mk">(1)</b></div><div class="cwhy">Brackets, indices, then subtract.</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">d</span><p class="qq mth">Work out 1.25 × <span class="mx"><span class="mw">3</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> × 56.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="245" onsubmit="return checkAns(this)"><label for="chk-730098448">Your answer</label><input id="chk-730098448" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">7</span><span class="de">2</span></span></span> × 56</span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">35</span><span class="de">8</span></span></span> × 56 = 35 × 7</span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; 245</span><b class="mk">(1)</b></div><div class="cwhy">Cancel 8 and 56 by 8.</div></div></div></div>
+</section>
+<section class="slide" data-title="Extension · Worksheet Section E" data-foot="Worksheet · Section E">
+<div class="hd"><div class="tags"><span class="tag orange">Extension</span><span class="tag">Worksheet · Section E</span><button class="timer big" data-timer-id="t10" data-seconds="480" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">8:00</span></button></div><h2>Question 5, parts (a) and (b)</h2><p class="lede">Extension — exam practice · 8 minutes. Only once sections A to D are marked. Finish it later if you run out of time.</p></div><div class="body" style="gap:14px"><div class="lab"><span class="pill">(a)</span><p>Area = length × width. Change 3.2 to a fraction.</p></div><div class="lab"><span class="pill o">(b)</span><p>Area of a triangle = ½ × base × height. Rearrange first.</p></div><div class="call"><span class="ico">★</span><div><b>What the marks are for</b><p>(b) is worth 3 marks: the rearranged formula, the division, the answer with units.</p></div></div></div>
+</section>
+<section class="slide" data-title="Extension — answers" data-foot="Answers · Worksheet Section E">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Worksheet Section E</p><h2>Extension — answers</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n2"><div class="acard t-green"><div class="ac-top"><span class="badge g">a</span><p class="qq mth">A path is 3.2 m long and <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span> m wide. Find its area.</p><span class="mtag">2 marks</span></div><form class="check" data-ans="2" onsubmit="return checkAns(this)"><label for="chk-1280067888">Your answer</label><input id="chk-1280067888" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">16</span><span class="de">5</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">8</span></span></span></span><b class=mk>(1)</b></div><div class="wl2" data-step="2" data-fx="left"><span>= <span class="mx"><span class="fr"><span class="nu">2</span><span class="de">1</span></span></span> × <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">1</span></span></span></span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; 2 m²</span><b class="mk">(1)</b></div><div class="cwhy">3.2 = <span class="mx"><span class="fr"><span class="nu">32</span><span class="de">10</span></span></span> = <span class="mx"><span class="fr"><span class="nu">16</span><span class="de">5</span></span></span>. Exercise 8.5 Q8.</div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">b</span><p class="qq mth">A triangle has area <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">20</span></span></span> m² and base 0.9 m. Find its height.</p><span class="mtag">3 marks</span></div><form class="check" data-ans="2 1/3" onsubmit="return checkAns(this)"><label for="chk-1402895142">Your answer</label><input id="chk-1402895142" autocomplete="off" placeholder="e.g. 2 5/12"><button type="submit">Check</button><span class="fb" aria-live="polite"></span></form><div class="work"><div class="wl2 prose" data-step="4" data-fx="left"><span>height = 2 × area ÷ base</span><b class=mk>(1)</b></div><div class="wl2" data-step="5" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">21</span><span class="de">10</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">9</span><span class="de">10</span></span></span> = <span class="mx"><span class="fr"><span class="nu">21</span><span class="de">10</span></span></span> × <span class="mx"><span class="fr"><span class="nu">10</span><span class="de">9</span></span></span></span><b class=mk>(1)</b></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">3</span></span></span> m</span><b class="mk">(1)</b></div><div class="cwhy">Check: <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> × 0.9 × <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">3</span></span></span> = <span class="mx"><span class="mw">1</span><span class="fr"><span class="nu">1</span><span class="de">20</span></span></span>  ✓</div></div></div></div>
+</section>
+<section class="slide" data-title="Exit ticket" data-foot="Exit ticket">
+<div class="hd"><div class="tags"><span class="tag orange">Before you go</span><span class="tag">UNIT 8 · WEEK 11 LESSON 1</span><button class="timer big" data-timer-id="t11" data-seconds="300" data-start-at="1" aria-label="Timer"><span class="t-ico">▶</span><span class="t-time">5:00</span></button></div><h2>Exit ticket — one question per part</h2></div><div class="body" style="gap:20px"><div class="q plain lg"><span class="numtxt">1</span><p>Work out  <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">12</span></span></span>.</p></div><div class="q plain lg"><span class="numtxt">2</span><p>Work out  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span>.</p></div><div class="q plain lg"><span class="numtxt">3</span><p>How many  <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span>-hour  lessons fit into  <span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span>  hours?</p></div><div class="q plain lg"><span class="numtxt">4</span><p>Work out  0.75 × 2.5 × 8.</p></div></div>
+</section>
+<section class="slide" data-title="Exit ticket — answers" data-foot="Answers · Check Yourself">
+<div class="hd"><p class="eyebrow" style="color:var(--green)">Answers · Check Yourself</p><h2>Exit ticket — answers</h2><p class="lede">Mark in a different colour, beside your answer.</p></div><div class="acards n4 small"><div class="acard t-green"><div class="ac-top"><span class="badge g">1</span><p class="qq mth"><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">12</span></span></span></p></div><div class="work"><div class="wl2" data-step="1" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">6</span></span></span> × <span class="mx"><span class="fr"><span class="nu">12</span><span class="de">5</span></span></span></span></div><div class="wl2" data-step="2" data-fx="left"><span>= 1 × 2</span></div></div><div data-step="3" data-fx="pop"><div class="apill"><span>✓&nbsp; 2</span></div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">2</span><p class="qq mth"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">3</span><span class="de">8</span></span></span></p></div><div class="work"><div class="wl2" data-step="4" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">9</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">8</span><span class="de">3</span></span></span></span></div><div class="wl2" data-step="5" data-fx="left"><span>= 3 × 2</span></div></div><div data-step="6" data-fx="pop"><div class="apill"><span>✓&nbsp; 6</span></div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">3</span><p class="qq mth"><span class="mx"><span class="mw">2</span><span class="fr"><span class="nu">1</span><span class="de">2</span></span></span> ÷ <span class="mx"><span class="fr"><span class="nu">1</span><span class="de">4</span></span></span></p></div><div class="work"><div class="wl2" data-step="7" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> × 4</span></div></div><div data-step="8" data-fx="pop"><div class="apill"><span>✓&nbsp; 10 lessons</span></div></div></div><div class="acard t-green"><div class="ac-top"><span class="badge g">4</span><p class="qq mth">0.75 × 2.5 × 8</p></div><div class="work"><div class="wl2" data-step="9" data-fx="left"><span><span class="mx"><span class="fr"><span class="nu">3</span><span class="de">4</span></span></span> × <span class="mx"><span class="fr"><span class="nu">5</span><span class="de">2</span></span></span> × 8</span></div><div class="wl2" data-step="10" data-fx="left"><span>= 3 × 5</span></div></div><div data-step="11" data-fx="pop"><div class="apill"><span>✓&nbsp; 15</span></div></div></div></div>
+</section>
+<section class="slide" data-title="Workbook — Sections 8.4 and 8.5" data-foot="More practice">
+<div class="hd"><p class="eyebrow">Take it further</p><h2>Workbook — Sections 8.4 and 8.5</h2></div><div class="body" style="gap:20px"><div class="lab"><span class="pill">Task</span><p>Workbook 8.4 — dividing fractions.  Workbook 8.5 — making calculations easier.</p></div><div class="lab"><span class="pill o">Practice</span><p>Learner’s Book Exercise 8.4, Q5, Q7 and Q9 (pages 181–183).</p></div><div class="lab"><span class="pill g">Revise</span><p>Learner’s Book Exercise 8.5, Q3, Q4 and Q6 (pages 185–186).</p></div><div class="call"><span class="ico">★</span><div><b>Tip</b><p>Write ‘bigger’ or ‘smaller’ above every division before you start, then check your answer agrees.</p></div></div></div>
+</section>
+
+<div id="progress"></div>
+<div id="hud"><div id="dots"></div><span id="count"></span></div>
+<div id="chip"><button class="timer" id="chipTimer" aria-label="Running timer"><span class="t-ico">❚❚</span><span class="t-time">0:00</span></button><button class="x" id="chipX" aria-label="Stop timer">×</button></div>
+</div>
+
+<div id="blank"></div>
+<div id="laser"></div>
+<div id="jump"></div>
+<div id="toast">Clicker or → next · ← back · F fullscreen · B black screen · G slide list · ? all shortcuts</div>
+<div id="ctrl">
+  <button id="bPrev" aria-label="Previous">‹</button>
+  <button id="bNext" aria-label="Next">›</button>
+  <button id="bMenu" aria-label="Slide list">☰</button>
+  <button id="bFs" aria-label="Fullscreen">⛶</button>
+  <button id="bHelp" aria-label="Shortcuts">?</button>
+</div>
+
+<div class="ov" id="menu"><div class="sheet"><button class="close" data-close>Close ✕</button><h3>Slides</h3><ol id="menuList"></ol></div></div>
+<div class="ov" id="help"><div class="sheet"><button class="close" data-close>Close ✕</button><h3>Presenting with a clicker</h3>
+<table>
+<tr><td>Next build / slide</td><td>Clicker forward, <kbd>→</kbd> <kbd>↓</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd>, or click the slide</td></tr>
+<tr><td>Back</td><td>Clicker back, <kbd>←</kbd> <kbd>↑</kbd> <kbd>PgUp</kbd>, or right-click</td></tr>
+<tr><td>Fullscreen</td><td><kbd>F</kbd> or the clicker’s slideshow button (<kbd>F5</kbd>)</td></tr>
+<tr><td>Black / white screen</td><td><kbd>B</kbd> or <kbd>.</kbd> &nbsp;/&nbsp; <kbd>W</kbd> — press again to return</td></tr>
+<tr><td>Start / pause timer</td><td><kbd>T</kbd>, or click the timer. Timers on Do Now, Think first and Your Turn start on the first click.</td></tr>
+<tr><td>Jump to a slide</td><td>Type its number then <kbd>Enter</kbd>, or <kbd>G</kbd> for the list</td></tr>
+<tr><td>Replay this slide’s builds</td><td><kbd>R</kbd></td></tr>
+<tr><td>Vietnamese on / off</td><td><kbd>V</kbd></td></tr>
+<tr><td>Hinge tallies (all hinge questions)</td><td><kbd>Q</kbd> or the ✓ button</td></tr>
+<tr><td>Teacher notes for this slide</td><td><kbd>S</kbd></td></tr>
+<tr><td>On-screen laser dot</td><td><kbd>L</kbd> (follows the mouse)</td></tr>
+<tr><td>First / last slide</td><td><kbd>Home</kbd> / <kbd>End</kbd></td></tr>
+</table>
+<p style="margin:14px 0 0;color:var(--muted)">The dots bottom-right show how many more clicks are left on a slide.</p>
+</div></div>
+</div>
+
+<script>
+(function(){
+  const vp=document.getElementById('viewport'), stage=document.getElementById('stage');
+  const slides=[...stage.querySelectorAll('.slide')];
+  const $=id=>document.getElementById(id);
+  let cur=0, step=0, numBuf='';
+
+  // feet + max steps
+  slides.forEach((s,k)=>{
+    if(s.dataset.foot){const f=document.createElement('div');f.className='foot';f.textContent='Grade 8 Maths · Unit 8 · Week 11 Lesson 1 · '+s.dataset.foot;s.appendChild(f);}
+    let m=0; s.querySelectorAll('[data-step],[data-play],[data-start-at]').forEach(e=>{m=Math.max(m,+(e.dataset.step||e.dataset.play||e.dataset.startAt||0))});
+    s._max=m;
+  });
+
+  function fit(){const w=vp.clientWidth,h=vp.clientHeight,sc=Math.min(w/1920,h/1080);stage.style.transform=`translate(${(w-1920*sc)/2}px,${(h-1080*sc)/2}px) scale(${sc})`;}
+  addEventListener('resize',fit); fit();
+
+  /* ---------- timers ---------- */
+  const timers={};
+  stage.querySelectorAll('.timer[data-timer-id]').forEach(b=>{const id=b.dataset.timerId;if(!timers[id])timers[id]={id,total:+b.dataset.seconds,left:+b.dataset.seconds,running:false,endAt:0,done:false,shown:false};});
+  let chipId=null, beeped={};
+  const fmt=s=>{s=Math.ceil(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  function startTimer(id){const t=timers[id];if(!t)return;if(t.done){t.left=t.total;t.done=false;}t.running=true;t.shown=true;t.endAt=Date.now()+t.left*1000;chipId=id;paint();}
+  function pauseTimer(id){const t=timers[id];if(!t||!t.running)return;t.left=Math.max(0,(t.endAt-Date.now())/1000);t.running=false;paint();}
+  function toggleTimer(id){const t=timers[id];if(!t)return;t.running?pauseTimer(id):startTimer(id);}
+  function stopTimer(id){const t=timers[id];if(!t)return;t.running=false;t.done=false;t.left=t.total;t.shown=false;if(chipId===id)chipId=null;paint();}
+  function beep(){try{const C=window.AudioContext||window.webkitAudioContext;const a=new C();[0,0.35,0.7].forEach(d=>{const o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.setValueAtTime(.0001,a.currentTime+d);g.gain.exponentialRampToValueAtTime(.25,a.currentTime+d+.02);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d+.25);o.connect(g).connect(a.destination);o.start(a.currentTime+d);o.stop(a.currentTime+d+.3)});}catch(e){}}
+  function paint(){
+    const now=Date.now();
+    Object.values(timers).forEach(t=>{if(t.running){t.left=Math.max(0,(t.endAt-now)/1000);if(t.left<=0){t.running=false;t.done=true;if(!beeped[t.id+t.endAt]){beeped[t.id+t.endAt]=1;beep();}}}});
+    stage.querySelectorAll('.timer[data-timer-id]').forEach(b=>paintPill(b,timers[b.dataset.timerId]));
+    const c=chipId&&timers[chipId], onSlide=c&&slides[cur].querySelector(`.timer[data-timer-id="${chipId}"]`);
+    $('chip').classList.toggle('show',!!(c&&c.shown&&!onSlide));
+    if(c)paintPill($('chipTimer'),c);
+  }
+  function paintPill(b,t){
+    b.querySelector('.t-time').textContent=t.done?"Time's up":fmt(t.left);
+    b.querySelector('.t-ico').textContent=t.running?'❚❚':(t.done?'↺':'▶');
+    b.classList.toggle('running',t.running&&t.left>60||t.running&&t.total<=60&&t.left>10);
+    b.classList.toggle('warn',t.running&&!(t.left>60||t.total<=60&&t.left>10));
+    b.classList.toggle('done',t.done);
+  }
+  setInterval(paint,250);
+  stage.querySelectorAll('.timer[data-timer-id]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleTimer(b.dataset.timerId)}));
+  $('chipTimer').addEventListener('click',e=>{e.stopPropagation();chipId&&toggleTimer(chipId)});
+  $('chipX').addEventListener('click',e=>{e.stopPropagation();chipId&&stopTimer(chipId)});
+
+  /* ---------- render ---------- */
+  function render(dir,instant){
+    slides.forEach((s,k)=>s.classList.toggle('active',k===cur));
+    const s=slides[cur];
+    s.classList.toggle('instant',!!instant);
+    s.querySelectorAll('[data-step]').forEach(e=>{const on=+e.dataset.step<=step;e.classList.toggle('shown',on);const td=e.closest('td.slot');if(td)td.classList.toggle('on',on);});
+    s.querySelectorAll('[data-play]').forEach(e=>{const on=+e.dataset.play<=step;if(on&&(!e.classList.contains('play')||(dir>0&&+e.dataset.play===step))){e.classList.remove('play');void e.offsetWidth;e.classList.add('play');}else if(!on)e.classList.remove('play');});
+    if(dir>0)s.querySelectorAll('[data-start-at]').forEach(e=>{if(+e.dataset.startAt===step){const t=timers[e.dataset.timerId];if(t&&!t.running)startTimer(e.dataset.timerId);}});
+    stage.classList.toggle('on-dark',s.classList.contains('dark'));
+    $('count').textContent=(cur+1)+' / '+slides.length;
+    $('progress').style.width=((cur+(s._max?step/s._max:1))/slides.length*100)+'%';
+    const d=$('dots');d.innerHTML='';for(let i=1;i<=s._max;i++){const x=document.createElement('i');if(i<=step)x.className='f';d.appendChild(x);}
+    try{history.replaceState(null,'','#'+(cur+1)+(step?'-'+step:''));}catch(e){}
+    paint();
+  }
+  function go(i,st,instant){cur=Math.max(0,Math.min(slides.length-1,i));step=Math.max(0,Math.min(slides[cur]._max,st||0));render(0,instant);}
+  function next(){const s=slides[cur];if(step<s._max){step++;slides[cur].classList.remove('instant');render(1);}else if(cur<slides.length-1){cur++;step=0;render(1);}}
+  function prev(){if(step>0){step--;render(-1,true);}else if(cur>0){cur--;step=slides[cur]._max;render(-1,true);}}
+
+  /* ---------- overlays ---------- */
+  const blank=$('blank'), laser=$('laser'), menu=$('menu'), help=$('help');
+  function setBlank(c){blank.className=blank.className===c?'':c;}
+  function openMenu(){const l=$('menuList');l.innerHTML='';slides.forEach((s,k)=>{const li=document.createElement('li');const b=document.createElement('button');b.innerHTML='<span>'+(k+1)+'</span>';b.appendChild(document.createTextNode(s.dataset.title||('Slide '+(k+1))));if(k===cur)b.className='cur';b.onclick=e=>{e.stopPropagation();menu.classList.remove('show');go(k,0);};li.appendChild(b);l.appendChild(li);});menu.classList.add('show');const c=l.querySelector('.cur');c&&c.focus();}
+  function anyOv(){return menu.classList.contains('show')||help.classList.contains('show');}
+  function closeOv(){menu.classList.remove('show');help.classList.remove('show');}
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();closeOv();}));
+  [menu,help].forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeOv();e.stopPropagation();}));
+  function fs(){try{if(document.fullscreenElement)document.exitFullscreen();else (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen).call(document.documentElement).catch(()=>{});}catch(e){}}
+  let vi=true;try{vi=localStorage.getItem('deck-vi')!=='0';}catch(e){}
+  document.body.classList.toggle('no-vi',!vi);
+  function toggleVi(){vi=!vi;document.body.classList.toggle('no-vi',!vi);try{localStorage.setItem('deck-vi',vi?'1':'0');}catch(e){}}
+
+  /* ---------- input ---------- */
+  addEventListener('keydown',e=>{
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    const k=e.key;
+    if(anyOv()){if(k==='Escape'){closeOv();e.preventDefault();}return;}
+    if(blank.className&&!['b','B','.','w','W',','].includes(k)){blank.className='';e.preventDefault();return;}
+    if(/^[0-9]$/.test(k)){numBuf+=k;$('jump').textContent='Go to slide '+numBuf;$('jump').style.display='block';e.preventDefault();return;}
+    if(k==='Enter'&&numBuf){go(+numBuf-1,0);numBuf='';$('jump').style.display='none';e.preventDefault();return;}
+    if(numBuf&&(k==='Escape'||k==='Backspace')){numBuf='';$('jump').style.display='none';e.preventDefault();return;}
+    switch(k){
+      case 'ArrowRight':case 'ArrowDown':case 'PageDown':case ' ':case 'Enter':case 'n':case 'N':next();break;
+      case 'ArrowLeft':case 'ArrowUp':case 'PageUp':case 'Backspace':case 'p':case 'P':prev();break;
+      case 'Home':go(0,0);break;
+      case 'End':go(slides.length-1,0);break;
+      case 'b':case 'B':case '.':setBlank('black');break;
+      case 'w':case 'W':case ',':setBlank('white');break;
+      case 'f':case 'F':case 'F5':fs();break;
+      case 'g':case 'G':case 'm':case 'M':openMenu();break;
+      case '?':case 'h':case 'H':help.classList.add('show');break;
+      case 't':case 'T':{const p=slides[cur].querySelector('.timer[data-timer-id]');toggleTimer(p?p.dataset.timerId:chipId);break;}
+      case 'r':case 'R':step=0;render(0);break;
+      case 'v':case 'V':toggleVi();break;
+      case 'l':case 'L':laser.classList.toggle('on');break;
+      default:return;
+    }
+    e.preventDefault();
+  });
+  vp.addEventListener('click',e=>{
+    if(e.target.closest('button,a,.ov,#ctrl'))return;
+    if(blank.className){blank.className='';return;}
+    next();
+  });
+  vp.addEventListener('contextmenu',e=>{if(e.target.closest('.ov'))return;e.preventDefault();prev();});
+  let tx=null,ty=null;
+  vp.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+  vp.addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;tx=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){dx<0?next():prev();e.preventDefault();}},{passive:false});
+  $('bPrev').onclick=e=>{e.stopPropagation();prev();};
+  $('bNext').onclick=e=>{e.stopPropagation();next();};
+  $('bMenu').onclick=e=>{e.stopPropagation();openMenu();};
+  $('bFs').onclick=e=>{e.stopPropagation();fs();};
+  $('bHelp').onclick=e=>{e.stopPropagation();help.classList.add('show');};
+
+  let idleT;
+  function wake(){vp.classList.remove('idle');clearTimeout(idleT);idleT=setTimeout(()=>vp.classList.add('idle'),2500);}
+  vp.addEventListener('mousemove',e=>{wake();laser.style.left=e.clientX+'px';laser.style.top=e.clientY+'px';});
+  wake();
+  setTimeout(()=>$('toast').classList.add('hide'),5000);
+
+  // keep the screen awake while presenting
+  let lock=null;async function wl(){try{if(navigator.wakeLock&&!lock){lock=await navigator.wakeLock.request('screen');lock.addEventListener('release',()=>lock=null);}}catch(e){}}
+  addEventListener('keydown',wl,{once:true});vp.addEventListener('click',wl,{once:true});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wl();});
+
+  // start position from link (#12 or #12-3)
+  function fromHash(){const m=/^#(\d+)(?:-(\d+))?$/.exec(location.hash||'');if(m)go(+m[1]-1,+(m[2]||0),true);return !!m;}
+  addEventListener('hashchange',fromHash);
+  if(!fromHash())go(0,0);
+})();
+</script>
+
+
+<script>
+/* Hinge-question tallies (Week 11). Counts live in this browser only (localStorage), per deck.
+   Q or the ✓ button lists every hinge in the deck; "Copy for spreadsheet" copies tab-separated rows. */
+(function(){
+  const DECK=document.body.dataset.deck, GROUP=document.body.dataset.group;
+  const K=id=>'hinge|'+DECK+'|'+id;
+  const load=id=>{try{return JSON.parse(localStorage.getItem(K(id)))||null}catch(e){return null}};
+  const save=(id,v)=>{try{localStorage.setItem(K(id),JSON.stringify(v))}catch(e){}};
+  const L='ABCD';
+  const hs=[...document.querySelectorAll('.slide.hinge')];
+  function paint(s){
+    const v=load(s.dataset.hinge)||{c:[0,0,0,0]}, ans=+s.dataset.ans, n=v.c.reduce((a,b)=>a+b,0), cls=+s.dataset.class;
+    s.querySelectorAll('.hopt').forEach((o,i)=>o.querySelector('.tc').textContent=v.c[i]);
+    const pct=n?Math.round(100*v.c[ans]/n):0;
+    s.querySelector('.hres').textContent=n?(n+(cls?' of '+cls:'')+' boards · '+v.c[ans]+' correct ('+pct+'%)'):'Tally the boards with − / + to see the % correct';
+    const vd=s.querySelector('.verdict');
+    if(!n){vd.textContent='Decide';vd.className='verdict';}
+    else if(pct>=80){vd.textContent='Move on — '+pct+'% correct. Pick up the few on the worksheet.';vd.className='verdict go';}
+    else{vd.textContent='Re-teach first — '+pct+'% correct';vd.className='verdict stop';}
+  }
+  hs.forEach(s=>{
+    s.querySelectorAll('.hopt').forEach((o,i)=>o.querySelectorAll('.tb').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const v=load(s.dataset.hinge)||{c:[0,0,0,0]};
+      v.c[i]=Math.max(0,v.c[i]+(+b.dataset.d)); v.t=new Date().toISOString(); save(s.dataset.hinge,v); paint(s);
+    })));
+    paint(s);
+  });
+  /* the log overlay */
+  const ov=document.createElement('div'); ov.className='ov'; ov.id='hlog';
+  ov.innerHTML='<div class="sheet"><button class="close" data-x>Close ✕</button><h3>Hinge questions · '+DECK+'</h3><div id="hlogT"></div><div class="acts"><button data-copy>Copy for spreadsheet</button><button class="clr" data-clear>Clear all tallies</button></div><p id="hlogM" style="color:var(--muted);margin:10px 0 0"></p></div>';
+  document.getElementById('viewport').appendChild(ov);
+  function rows(){return hs.map((s,k)=>{const v=load(s.dataset.hinge)||{c:[0,0,0,0]};const n=v.c.reduce((a,b)=>a+b,0),ans=+s.dataset.ans;return{k,id:s.dataset.hinge,q:s.dataset.q,c:v.c,n,ans:L[ans],pct:n?Math.round(100*v.c[ans]/n):'',t:v.t||''};});}
+  function open(){
+    const r=rows();
+    document.getElementById('hlogT').innerHTML='<table><tr><th>Hinge</th><th>A</th><th>B</th><th>C</th><th>D</th><th>Right</th><th>%</th></tr>'+r.map(x=>'<tr><td>'+x.id+'</td>'+x.c.map(c=>'<td>'+c+'</td>').join('')+'<td>'+x.ans+'</td><td>'+(x.pct===''?'–':x.pct+'%')+'</td></tr>').join('')+'</table>';
+    document.getElementById('hlogM').textContent='Saved in this browser only. Copy the rows into your action-research log after the lesson.';
+    ov.classList.add('show');
+  }
+  ov.addEventListener('click',e=>{e.stopPropagation();if(e.target===ov||e.target.dataset.x!==undefined)ov.classList.remove('show');});
+  ov.querySelector('[data-copy]').addEventListener('click',async e=>{
+    const r=rows(), head=['Date','Deck','Group','Hinge','Question','A','B','C','D','Correct','% correct'].join('\t');
+    const txt=head+'\n'+r.map(x=>[(x.t||'').slice(0,10),DECK,GROUP,x.id,x.q,...x.c,x.ans,x.pct].join('\t')).join('\n');
+    try{await navigator.clipboard.writeText(txt);document.getElementById('hlogM').textContent='Copied '+r.length+' rows — paste into a spreadsheet.';}
+    catch(err){const ta=document.createElement('textarea');ta.value=txt;ov.querySelector('.sheet').appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e2){}document.getElementById('hlogM').textContent='Copied (or select the box and copy).';}
+  });
+  ov.querySelector('[data-clear]').addEventListener('click',e=>{if(!window.confirm||true){hs.forEach(s=>{try{localStorage.removeItem(K(s.dataset.hinge))}catch(x){}paint(s);});open();}});
+  addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;if(e.key==='q'||e.key==='Q'){e.preventDefault();e.stopImmediatePropagation();ov.classList.contains('show')?ov.classList.remove('show'):open();}else if(e.key==='Escape'&&ov.classList.contains('show')){ov.classList.remove('show');e.stopImmediatePropagation();}},true);
+  const b=document.createElement('button');b.id='bHinge';b.setAttribute('aria-label','Hinge tallies');b.textContent='✓';
+  b.onclick=e=>{e.stopPropagation();open();};document.getElementById('ctrl').prepend(b);
+})();
+</script>
+<script>
+// ---------------------------------------------------------------- fractions
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; }
+function frH(n, d, w) {
+  return `<span class="mx">${w ? `<span class="mw">${w}</span>` : ""}<span class="fr"><span class="nu">${n}</span><span class="de">${d}</span></span></span>`;
+}
+function parseVal(s) {
+  s = String(s).trim().replace(/\s+/g, " ").replace(/[−–]/g, "-");
+  let m;
+  if ((m = s.match(/^(-?\d+)[ +](\d+)\/(\d+)$/))) return { n: +m[1] * +m[3] + +m[2], d: +m[3], kind: "mixed", raw: [+m[2], +m[3]] };
+  if ((m = s.match(/^(-?\d+)\/(\d+)$/))) return { n: +m[1], d: +m[2], kind: "frac", raw: [+m[1], +m[2]] };
+  if ((m = s.match(/^(-?\d*)\.(\d+)$/))) { const d = 10 ** m[2].length; return { n: Math.round(parseFloat(s) * d), d, kind: "dec" }; }
+  if ((m = s.match(/^-?\d+$/))) return { n: +s, d: 1, kind: "int" };
+  return null;
+}
+function checkAns(form) {
+  const fb = form.querySelector(".fb"), inp = form.querySelector("input");
+  const want = parseVal(form.dataset.ans), got = parseVal(inp.value);
+  fb.className = "fb";
+  if (!got || got.d === 0) { fb.textContent = "Type a fraction like 11/12, a mixed number like 2 5/12, or a decimal."; fb.classList.add("no"); return false; }
+  const same = got.n * want.d === want.n * got.d;
+  if (!same) { fb.textContent = "Not yet. Check each line of your working, then try again."; fb.classList.add("no"); return false; }
+  if (got.raw && gcd(got.raw[0], got.raw[1]) > 1) { fb.textContent = "Right value. Now write it in its simplest form."; fb.classList.add("near"); return false; }
+  if (want.kind === "mixed" && got.kind === "frac" && Math.abs(got.n) > got.d) { fb.textContent = "Right value. Now write it as a mixed number."; fb.classList.add("near"); return false; }
+  fb.textContent = "Correct. Now check your working against the answer."; fb.classList.add("ok");
+  return false;
+}
+function primes(n) { const f = []; for (let p = 2; p * p <= n; p++) while (n % p === 0) { f.push(p); n /= p; } if (n > 1) f.push(n); return f; }
+function analyse(n, d) {
+  const g = gcd(n, d), sn = n / g, sd = d / g, pf = primes(sd);
+  const term = pf.every(p => p === 2 || p === 5);
+  // long division with cycle detection
+  const whole = Math.floor(sn / sd); let r = sn % sd; const digits = [], seen = new Map(), rems = [];
+  while (r !== 0 && !seen.has(r) && digits.length < 200) { seen.set(r, digits.length); rems.push(r); r *= 10; digits.push(Math.floor(r / sd)); r %= sd; }
+  const start = r === 0 ? -1 : seen.get(r);
+  return { g, sn, sd, pf, term, whole, digits, start, rems, back: r };
+}
+function decHTML(a) {
+  if (!a.digits.length) return String(a.whole);
+  if (a.start < 0) return a.whole + "." + a.digits.join("");
+  const pre = a.digits.slice(0, a.start).join(""), block = a.digits.slice(a.start);
+  if (block.length > 24) return a.whole + "." + pre + block.slice(0, 12).join("") + "… <small>(a block of " + block.length + " digits repeats)</small>";
+  const dot = x => `<span class="rd">${x}</span>`;
+  const b = block.length === 1 ? dot(block[0]) : dot(block[0]) + block.slice(1, -1).join("") + dot(block[block.length - 1]);
+  return a.whole + "." + pre + b;
+}
+function runMachine(form) {
+  const n = parseInt(form.querySelector("#m-num").value, 10), d = parseInt(form.querySelector("#m-den").value, 10);
+  const S = id => form.querySelector(id);
+  if (!(n > 0) || !(d > 0)) { S("#m-s").textContent = "Type two whole numbers, for example 5 and 12."; ["#m-p", "#m-d", "#m-x", "#m-r"].forEach(i => S(i).textContent = ""); return false; }
+  const a = analyse(n, d);
+  S("#m-s").innerHTML = "<span>" + (a.g > 1 ? `${frH(n, d)} = ${frH(a.sn, a.sd)} <small>(÷ ${a.g})</small>` : `${frH(n, d)} <small>is already in its simplest form</small>`) + "</span>";
+  S("#m-p").innerHTML = a.sd === 1 ? "1 <small>(a whole number)</small>" :
+    `${a.sd} = ` + a.pf.map(p => `<span class="pf ${p === 2 || p === 5 ? "good" : "bad"}">${p}</span>`).join(" × ");
+  const bad = [...new Set(a.pf.filter(p => p !== 2 && p !== 5))];
+  S("#m-d").innerHTML = a.sd === 1 ? `<span class="vd-t">A whole number → it terminates</span>` : a.term ? `<span class="vd-t">Only 2s and 5s → terminating</span>`
+    : `<span class="vd-r">There is a ${bad.join(" and a ")} → recurring</span>`;
+  S("#m-x").innerHTML = `<span>${a.sd === 1 ? frH(n, d) : frH(a.sn, a.sd)} = ${decHTML(a)}</span>`;
+  if (a.sd === 1) { S("#m-r").textContent = `${d} goes into ${n} exactly, so there is no decimal part.`; return false; }
+  const rs = a.rems.slice(0, 10);
+  S("#m-r").textContent = a.start < 0 ? `Remainders: ${rs.join(", ")}${a.rems.length > 10 ? " …" : ""}, then 0, so it stops.`
+    : `Remainders: ${rs.join(", ")}${a.rems.length > 10 ? " …" : ""}, then ${a.back} again, so the digits repeat.`;
+  return false;
+}
+function sortPick(btn, pick) {
+  const c = btn.closest(".sc");
+  c.querySelectorAll("button").forEach(b => b.disabled = true); btn.classList.add("picked");
+  const ok = String(pick) === c.dataset.ans; c.classList.add(ok ? "right" : "wrong");
+  const w = c.querySelector(".sc-why"); w.innerHTML = (ok ? "✓ " : "✗ ") + w.dataset.why;
+  const grid = c.closest(".slide"), all = grid.querySelectorAll(".sc").length;
+  grid.querySelector(".sort-score").textContent = grid.querySelectorAll(".sc.right").length + " / " + all;
+}
+function sortReset(b) {
+  const s = b.closest(".slide");
+  s.querySelectorAll(".sc").forEach(c => { c.classList.remove("right", "wrong"); c.querySelector(".sc-why").innerHTML = "";
+    c.querySelectorAll("button").forEach(x => { x.disabled = false; x.classList.remove("picked"); }); });
+  s.querySelector(".sort-score").textContent = "0 / " + s.querySelectorAll(".sc").length;
+}
+document.querySelectorAll(".mach").forEach(f => runMachine(f));
+function parseFr(s) {
+  s = String(s).trim().replace(/\s+/g, " ");
+  let m;
+  if ((m = s.match(/^(\d+) (\d+)\/(\d+)$/))) return { w: +m[1], n: +m[2], d: +m[3], mixed: true };
+  if ((m = s.match(/^(\d+)\/(\d+)$/))) return { w: 0, n: +m[1], d: +m[2], mixed: false };
+  if ((m = s.match(/^\d+$/))) return { w: +s, n: 0, d: 1, whole: true };
+  return null;
+}
+function frS(f) { return f.whole ? String(f.w) : frH(f.n, f.d, f.mixed ? f.w : ""); }
+function frI(n, d, cn, cd) {
+  const c = (x, k) => k ? `<span class="c-o">${x}</span>` : x;
+  return `<span class="mx"><span class="fr"><span class="nu">${c(n, cn)}</span><span class="de">${c(d, cd)}</span></span></span>`;
+}
+function mixedS(n, d) {
+  const g = gcd(n, d); n /= g; d /= g;
+  if (d === 1) return String(n);
+  return n > d ? frH(n % d, d, Math.floor(n / d)) : frH(n, d);
+}
+function runMachine2(form) {
+  const out = form.querySelector(".m2-steps"); out.innerHTML = "";
+  const A = parseFr(form.querySelector("#m2-a").value), B = parseFr(form.querySelector("#m2-b").value);
+  const op = form.querySelector("#m2-op").value;
+  if (!A || !B || A.d === 0 || B.d === 0 || (op === "÷" && B.w === 0 && B.n === 0)) {
+    out.innerHTML = '<li><span></span><span class="m2-err">Type a fraction (3/4), a mixed number (2 4/5) or a whole number (12) in both boxes.</span></li>'; return false; }
+  let k = 0;
+  const step = (m, r, cls) => { k++; out.insertAdjacentHTML("beforeend",
+    `<li class="${cls || ""}"><span class="mo-n">${cls === "ans" ? "✓" : k}</span><span class="m2-m">${m}</span><span class="m2-r">${r}</span></li>`); };
+  let a = [A.w * A.d + A.n, A.d], b = [B.w * B.d + B.n, B.d];
+  step(`${frS(A)} ${op} ${frS(B)}`, "The question");
+  if (A.mixed || B.mixed || A.whole || B.whole)
+    step(`${frI(a[0], a[1])} ${op} ${frI(b[0], b[1])}`, A.mixed || B.mixed ? "Mixed numbers → improper fractions" : "Whole number → over 1");
+  if (op === "÷") { b = [b[1], b[0]]; step(`${frI(a[0], a[1])} <span class="c-o">×</span> ${frI(b[0], b[1], 1, 1)}`, "Keep, change ÷ to ×, flip the second"); }
+  // cancel: any numerator with any denominator, by the HCF
+  const pairs = [[0, 3, "a", "b"], [2, 1, "b", "a"], [0, 1, "a", "a"], [2, 3, "b", "b"]];
+  for (const [i, j] of pairs) {
+    const v = [a[0], a[1], b[0], b[1]], g = gcd(v[i], v[j]);
+    if (g > 1) {
+      const top = v[i], bot = v[j]; v[i] /= g; v[j] /= g; a = [v[0], v[1]]; b = [v[2], v[3]];
+      const hl = [i === 0, j === 1 || i === 1, i === 2, j === 3];
+      step(`${frI(a[0], a[1], i === 0, j === 1)} × ${frI(b[0], b[1], i === 2, j === 3)}`, `Cancel ${top} and ${bot} by ${g}`);
+    }
+  }
+  const n = a[0] * b[0], d = a[1] * b[1];
+  step(d === 1 ? String(n) : frI(n, d), `Multiply: ${a[0]} × ${b[0]} and ${a[1]} × ${b[1]}`);
+  const first = (A.w * A.d + A.n) / A.d, ans = n / d;
+  const bs = ans > first ? "bigger than" : ans < first ? "smaller than" : "the same as";
+  step(mixedS(n, d), (d > 1 && n > d ? "Make it a mixed number. " : "") + `The answer is ${bs} the first number.`, "ans");
+  return false;
+}
+document.querySelectorAll(".mach2").forEach(f => runMachine2(f));
+
+
+</script>
+
+<script>
+/* Year 8: teacher notes on S, and keep typing / clicking inside forms from moving the slides. */
+(function(){
+  const vp=document.getElementById('viewport');
+  const guard=e=>{const t=e.target;if(t&&t.closest&&t.closest('input,select,textarea,label,form .fb')){e.stopImmediatePropagation();}};
+  addEventListener('keydown',e=>{const t=e.target;if(t&&t.closest&&t.closest('input,select,textarea')){if(e.key==='Escape')t.blur();e.stopImmediatePropagation();}},true);
+  vp.addEventListener('click',guard,true);
+  vp.addEventListener('contextmenu',e=>{const t=e.target;if(t&&t.closest&&t.closest('input,select,textarea'))e.stopImmediatePropagation();},true);
+  const ov=document.createElement('div');ov.className='ov';ov.id='snotes';
+  ov.innerHTML='<div class="sheet"><button class="close" data-x>Close ✕</button><h3>Teacher notes</h3><p id="snotesT"></p></div>';
+  vp.appendChild(ov);
+  ov.addEventListener('click',e=>{e.stopPropagation();if(e.target===ov||e.target.dataset.x!==undefined)ov.classList.remove('show');});
+  addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==='s'||e.key==='S'){e.preventDefault();e.stopImmediatePropagation();
+      if(ov.classList.contains('show')){ov.classList.remove('show');return;}
+      const s=document.querySelector('.slide.active');document.getElementById('snotesT').textContent=(s&&s.dataset.say)||'No notes for this slide.';ov.classList.add('show');}
+    else if(e.key==='Escape'&&ov.classList.contains('show')){ov.classList.remove('show');e.stopImmediatePropagation();}},true);
+})();
+</script>
+</body>
+</html>

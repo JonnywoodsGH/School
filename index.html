@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grade 8 Maths Lessons</title>
+<style>
+:root{--paper:#FAF6EE;--card:#fff;--ink:#1F2A37;--muted:#5F6B7A;--navy:#16324F;--orange:#D96A20;--line:#E0D6C2;--code:#F3F6FA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;line-height:1.5}
+main{max-width:860px;margin:0 auto;padding:40px 16px 64px}
+h1{font-family:Georgia,"Times New Roman",serif;color:var(--navy);font-size:2rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 32px}
+h2{font-family:Georgia,serif;color:var(--navy);font-size:1.3rem;border-bottom:2px solid var(--orange);padding-bottom:6px;margin:36px 0 16px}
+.lesson{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:14px}
+.lesson h3{margin:0 0 10px;font-size:1.05rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+a.btn,button{font:inherit;font-size:.9rem;border-radius:6px;padding:7px 14px;cursor:pointer;text-decoration:none;border:1px solid var(--navy)}
+a.btn{background:var(--navy);color:#fff}
+button{background:#fff;color:var(--navy)}
+button.done{background:#1C7A55;border-color:#1C7A55;color:#fff}
+textarea{width:100%;height:84px;font:12px/1.4 Consolas,Menlo,monospace;background:var(--code);border:1px solid var(--line);border-radius:6px;padding:8px;color:var(--ink);resize:vertical}
+.how{color:var(--muted);font-size:.92rem}
+.how code{background:var(--code);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Grade 8 Maths · Interactive lessons</h1>
+  <p class="sub">Cambridge Lower Secondary Mathematics, Stage 9</p>
+
+  <p class="how"><b>Adding a lesson to Canvas:</b> copy the embed code, open the Canvas page, choose <b>Edit</b>, switch to the HTML editor (the <code>&lt;/&gt;</code> button), paste the code, then <b>Save</b>. In the lesson, click the slide once and use the arrow keys. Press <b>F</b> for full screen.</p>
+
+  <h2>Week 11 · Unit 8 Fractions and Unit 5 Angles</h2>
+  <div id="w11"></div>
+</main>
+<script>
+const BASE = location.origin + location.pathname.replace(/index\.html$/, "");
+const LESSONS = {
+  w11: [
+    ["Lesson 1 · Dividing fractions and making calculations easier (8.4, 8.5)", "year8-maths/week-11/lesson-1-dividing-fractions.html"],
+    ["Lesson 2 · Dividing in context, making calculations easier and Unit 8 review", "year8-maths/week-11/lesson-2-dividing-in-context-unit-8-review.html"],
+    ["Lesson 3 · Calculating angles (5.1)", "year8-maths/week-11/lesson-3-calculating-angles.html"]
+  ]
+};
+function embed(url, title){
+  return '<div style="position: relative; width: 100%; padding-top: 56.25%;">' +
+    '<iframe src="' + url + '" title="' + title.replace(/"/g, "&quot;") + '" ' +
+    'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" ' +
+    'allow="fullscreen" allowfullscreen="allowfullscreen"></iframe></div>';
+}
+for (const [id, list] of Object.entries(LESSONS)) {
+  const box = document.getElementById(id);
+  list.forEach(([title, path], i) => {
+    const url = BASE + path, code = embed(url, title);
+    const el = document.createElement("div");
+    el.className = "lesson";
+    el.innerHTML = '<h3></h3><div class="row"><a class="btn" target="_blank" rel="noopener">Open lesson</a>' +
+      '<button type="button">Copy embed code</button></div><textarea readonly aria-label="Embed code"></textarea>';
+    el.querySelector("h3").textContent = title;
+    el.querySelector("a").href = url;
+    const ta = el.querySelector("textarea"); ta.value = code;
+    const b = el.querySelector("button");
+    b.onclick = async () => {
+      try { await navigator.clipboard.writeText(code); } catch (e) { ta.select(); document.execCommand("copy"); }
+      b.textContent = "Copied"; b.classList.add("done");
+      setTimeout(() => { b.textContent = "Copy embed code"; b.classList.remove("done"); }, 1800);
+    };
+    box.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>
